@@ -1,60 +1,51 @@
 import 'package:alcoholic/models/production/stores/won_price_summary.dart';
 import 'package:alcoholic/models/section_name.dart';
-
-import 'store_state.dart';
+import '../Utilities/may_be_fake.dart';
 
 // Collection Name /stores/storeId
-class Store{
-
-  String storeId;
-  String storeOwnerFK;
+class Store extends MayBeFake {
+  String storeOwnerPhoneNumber;
   String storeName;
-  String imageURL;
+  String storeImageURL;
   SectionName sectionName;
-  StoreState storeState;
+
   WonPriceSummary? lastWonPrice;
 
-
   Store({
-    required this.storeId,
-    required this.storeOwnerFK,
+    required this.storeOwnerPhoneNumber,
     required this.storeName,
-    required this.imageURL,
+    required this.storeImageURL,
     required this.sectionName,
-    this.storeState = StoreState.hasNoCompetition,
     this.lastWonPrice,
-  });
+    isFake,
+  }) : super(isFake: isFake);
 
-    Map<String,dynamic> toJson(){
-    return {
+  @override
+  Map<String, dynamic> toJson() {
+    Map<String, dynamic> map = super.toJson();
+    map.addAll({
       'Store Name': storeName,
-      'Store Owner FK': storeOwnerFK,
-      'Store Image URL': imageURL,
+      'Store Owner Phone Number': storeOwnerPhoneNumber,
+      'Store Image URL': storeImageURL,
       'Section Name': sectionName,
-      'Store Id': storeId,
-      'Store State': storeState,
       'Last Won Price Summary': lastWonPrice!.toJson(),
-    };
+    });
+    return map;
   }
 
-  factory Store.fromJson(dynamic json){
+  factory Store.fromJson(dynamic json) {
     return Store(
-      storeId: json['Store Id'],
-      storeOwnerFK: json['Store Owner FK'],
-      storeName: json['Store Name'], 
-      imageURL: json['Store Image URL'], 
-      sectionName: json['Section Name'],
-      storeState: json['Store State'],
-      lastWonPrice: WonPriceSummary.fromJson(json['Last Won PriceSummary']),
-    );
+        storeOwnerPhoneNumber: json['Store Owner Phone Number'],
+        storeName: json['Store Name'],
+        storeImageURL: json['Store Image URL'],
+        sectionName: json['Section Name'],
+        lastWonPrice: WonPriceSummary.fromJson(json['Last Won PriceSummary']),
+        isFake: json['Is Fake'] == 'Yes' ? true : false);
   }
 
-
-  @override 
-  String toString(){
-    
+  @override
+  String toString() {
     return 'Store Name: $storeName '
-    'Section Name: $sectionName  '
-    'Store Id: $storeId ';
+        'Section Name: $sectionName  ';
   }
 }

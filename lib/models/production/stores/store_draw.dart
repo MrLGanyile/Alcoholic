@@ -1,7 +1,9 @@
-
 // Collection Name /stores/storeId/store_draws/storeDrawId
-class StoreDraw{
+import 'package:alcoholic/models/production/Utilities/may_be_fake.dart';
 
+import '../../section_name.dart';
+
+class StoreDraw extends MayBeFake {
   String storeDrawId;
   String storeFK;
   DateTime drawDateAndTime;
@@ -10,12 +12,11 @@ class StoreDraw{
   bool isOpen;
   int numberOfGrandPrices;
   String storeName;
-  String storeAddress;
   String storeImageURL;
+  SectionName sectionName;
 
   // Contains A Sub Collection Of Draw Grand Prices
   // Contains A Sub Collection Of Draw Competitors
-  
 
   StoreDraw({
     required this.storeDrawId,
@@ -25,35 +26,40 @@ class StoreDraw{
     required this.numberOfCompetitorsSoFar,
     this.isOpen = true,
     required this.numberOfGrandPrices,
-
     required this.storeName,
-    required this.storeAddress,
-    required this.storeImageURL
-  });
+    required this.storeImageURL,
+    required this.sectionName,
+    isFake,
+  }) : super(isFake: isFake);
 
-  Map<String, dynamic> toJson()=>{
-    'Store Draw Id': storeDrawId,
-    'Store FK': storeFK,
-    'Draw Date & Time': drawDateAndTime,
-    'Joining Fee': joiningFee,
-    'Number Of Grand Prices': numberOfGrandPrices,
-    'Number of Competitors So Far': numberOfCompetitorsSoFar,
-    'Is Open': isOpen,
-    'Store Name': storeName,
-    'Store Address': storeAddress,
-    'Store Image URL': storeImageURL,
-  };
+  @override
+  Map<String, dynamic> toJson() {
+    Map<String, dynamic> map = super.toJson();
+    map.addAll({
+      'Store Draw Id': storeDrawId,
+      'Store FK': storeFK,
+      'Draw Date & Time': drawDateAndTime,
+      'Joining Fee': joiningFee,
+      'Number Of Grand Prices': numberOfGrandPrices,
+      'Number of Competitors So Far': numberOfCompetitorsSoFar,
+      'Is Open': isOpen,
+      'Store Name': storeName,
+      'Store Image URL': storeImageURL,
+      'Section Name': sectionName,
+    });
+    return map;
+  }
 
-  factory StoreDraw.fromJson(dynamic  json)=>StoreDraw(
-    storeDrawId: json['Store Draw Id'], 
-    storeFK: json['Store FK'], 
-    drawDateAndTime: json['Draw Date & Time'], 
-    joiningFee: json['Joining Fee'], 
-    numberOfGrandPrices: json['Number Of Grand Prices'],
-    numberOfCompetitorsSoFar: json['Number of Competitors So Far'],
-    isOpen: json['Is Open'],
-    storeName: json['Store Name'],
-    storeAddress: json['Store Address'],
-    storeImageURL: json['Store Image URL'],
-  );
+  factory StoreDraw.fromJson(dynamic json) => StoreDraw(
+      storeDrawId: json['Store Draw Id'],
+      storeFK: json['Store FK'],
+      drawDateAndTime: json['Draw Date & Time'],
+      joiningFee: json['Joining Fee'],
+      numberOfGrandPrices: json['Number Of Grand Prices'],
+      numberOfCompetitorsSoFar: json['Number of Competitors So Far'],
+      isOpen: json['Is Open'],
+      storeName: json['Store Name'],
+      storeImageURL: json['Store Image URL'],
+      sectionName: json['Section Name'],
+      isFake: json['Is Fake'] == 'Yes' ? true : false);
 }

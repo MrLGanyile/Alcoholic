@@ -30,10 +30,33 @@ dependencies:
   flutter:
     sdk: flutter
 
+  get: ^4.6.2 
+  firebase_core: ^2.8.0
+  cloud_firestore: ^4.4.5
+  firebase_storage: ^11.0.16
+  firebase_auth: ^4.3.0
+  firebase_phone_auth_handler: ^1.0.8
+
+  permission_handler: ^9.1.0 
+
+  simple_circular_progress_bar: ^1.0.2
+  image_picker: ^0.8.7 
+  file_picker: ^4.6.1
+
+  provider: ^6.0.5
+  pinput: ^2.2.16
+  easy_container: ^1.0.4
+  intl_phone_field: ^3.1.0
+
+  
+  internet_connection_checker: ^0.0.1+4
+  
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
+  dropdown_button2: ^2.1.4
+  cloud_functions: ^4.0.13
 
 dev_dependencies:
   flutter_test:
@@ -58,9 +81,28 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  assets:
+    - assets/users/admins/
+    - assets/users/owners/
+    - assets/users/owners/ids/
+    - assets/users/alcoholics/
+    - assets/logo.png
+    - assets/profile.jpg
+    - assets/stores/
+    - assets/alcohol/
+    - assets/grand prices/
+
+    - assets/posts/past/images/
+    - assets/posts/past/sounds/
+    - assets/posts/past/videos/
+
+    - assets/posts/normal/images/
+    - assets/posts/normal/sounds/
+    - assets/posts/normal/videos/
+
+    - assets/posts/future/images/
+    - assets/posts/future/sounds/
+    - assets/posts/future/videos/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware

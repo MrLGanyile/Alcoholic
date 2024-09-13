@@ -1,65 +1,50 @@
 // Collection Name /stores/storeId/store_draws/drawId/draw_competitors/drawCompetitorId
-import 'dart:math';
 
-class DrawCompetitor{
-  
+import 'package:alcoholic/models/production/Utilities/may_be_fake.dart';
+
+class DrawCompetitor extends MayBeFake {
   String competitorId; // Not A User Id
-  String userId;
   String imageURL;
   String storeDrawFK;
-  late String? threeLetters;
+  String username;
   int competitorNumber;
+  String alcoholic3DigitToken;
 
   DrawCompetitor({
-    required this.userId,
-    required this.imageURL,
-    this.threeLetters,  
-    required this.competitorNumber,
     required this.competitorId,
+    required this.imageURL,
+    required this.username,
+    required this.competitorNumber,
     required this.storeDrawFK,
+    required this.alcoholic3DigitToken,
+    isFake,
+  }) : super(isFake: isFake);
 
-  });
+  @override
+  Map<String, dynamic> toJson() {
+    Map<String, dynamic> map = super.toJson();
 
-  Map<String, dynamic> toJson(){
-    return {
+    map.addAll({
       'Competitor Id': competitorId,
-      'User Id': userId,
       'Image URL': imageURL,
-      'Store Draw FK':storeDrawFK,
-      '3Letters': threeLetters,
+      'Store Draw FK': storeDrawFK,
+      'Username': username,
       'Competitor Number': competitorNumber,
-    };
+      'Alcoholic 3 Digit Token': alcoholic3DigitToken,
+    });
+    return map;
   }
 
-  factory DrawCompetitor.fromJson(dynamic json){
-    
+  factory DrawCompetitor.fromJson(dynamic json) {
     DrawCompetitor competitor = DrawCompetitor(
-    userId: json['User Id'], 
-    imageURL: json['Image URL'],
-    threeLetters: json['3Letters'],
-    competitorId: json['Competitor Id'],
-    storeDrawFK: json['Store Draw FK'],
-    competitorNumber: json['Competitor Number']
-    );
+        imageURL: json['Image URL'],
+        username: json['Username'],
+        competitorId: json['Competitor Id'],
+        storeDrawFK: json['Store Draw FK'],
+        competitorNumber: json['Competitor Number'],
+        alcoholic3DigitToken: json['Alcoholic 3 Digit Token'],
+        isFake: json['Is Fake'] == 'Yes' ? true : false);
 
     return competitor;
   }
-
-   void generateCompetitionId(){
-
-    if(this.threeLetters==null){
-      generateCompetitionId();
-    }
-    String lettersAndNumbers = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890';
-
-    String threeLetters = '';
-
-    for(int i = 0; i < 3;i++){
-      Random random = Random();
-      threeLetters += lettersAndNumbers[random.nextInt(lettersAndNumbers.length)];
-    }
-
-    this.threeLetters = threeLetters;
-  }
-
 }

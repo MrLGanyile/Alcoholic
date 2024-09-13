@@ -1,49 +1,49 @@
-import 'alcohol.dart';
+import 'package:alcoholic/models/production/Utilities/may_be_fake.dart';
 
 // Collection Name /stores/storeId/store_draws/drawId/draw_grand_prices/drawGrandPriceId
-class DrawGrandPrice{
-
+class DrawGrandPrice extends MayBeFake {
   String grandPriceId;
   String storeDrawFK;
   String imageURL;
   String description;
-  List<Alcohol> drinks;
   int grandPriceIndex;
 
   DrawGrandPrice({
     required this.grandPriceId,
     required this.storeDrawFK,
     required this.imageURL,
-    required this.drinks,
     required this.description,
     required this.grandPriceIndex,
-  });
+    isFake,
+  }) : super(isFake: isFake);
 
-  Map<String,dynamic> toJson(){
-    return {
+  @override
+  Map<String, dynamic> toJson() {
+    Map<String, dynamic> map = super.toJson();
+
+    map.addAll({
       'Grand Price Id': grandPriceId,
       'Store Draw FK': storeDrawFK,
       'Description': description,
       'Image URL': imageURL,
-      'Drinks' : drinks,
       'Grand Price Index': grandPriceIndex,
-    };
+    });
+    return map;
   }
 
-  factory DrawGrandPrice.fromJson(dynamic json){
+  factory DrawGrandPrice.fromJson(dynamic json) {
     return DrawGrandPrice(
-      grandPriceId: json['Grand Price Id'],
-      storeDrawFK: json['Store Draw FK'],
-      description: json['Description'],
-      imageURL: json['Image URL'], 
-      drinks: json['Drinks'], 
-      grandPriceIndex: json['Grand Price Index']
-    );
+        grandPriceId: json['Grand Price Id'],
+        storeDrawFK: json['Store Draw FK'],
+        description: json['Description'],
+        imageURL: json['Image URL'],
+        grandPriceIndex: json['Grand Price Index'],
+        isFake: json['Is Fake'] == 'Yes' ? true : false);
   }
 
   @override
-  String toString(){
+  String toString() {
     return 'Description: $description Grand Price Id: $grandPriceId '
-    'Image Location: $imageURL Drinks: ${drinks[0]}';
+        'Image Location: $imageURL';
   }
 }

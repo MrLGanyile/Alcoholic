@@ -1,6 +1,9 @@
 // Collection Name /won_prices_summaries/wonPriceSummaryId
-class WonPriceSummary{
+import '../Utilities/may_be_fake.dart';
 
+import '../../section_name.dart';
+
+class WonPriceSummary extends MayBeFake {
   String wonPriceSummaryId;
   String storeFK;
   String winnerImageURL;
@@ -9,9 +12,8 @@ class WonPriceSummary{
 
   String storeImageURL;
   String storeName;
-  String storeAddress;
+  SectionName storeSection;
   DateTime wonDate;
-  bool isMale;
 
   WonPriceSummary({
     required this.wonPriceSummaryId,
@@ -21,35 +23,37 @@ class WonPriceSummary{
     required this.grandPriceDescription,
     required this.storeImageURL,
     required this.storeName,
-    required this.storeAddress,
+    required this.storeSection,
     required this.wonDate,
-    required this.isMale,
-  });
+    isFake,
+  }) : super(isFake: isFake);
 
-  Map<String, dynamic> toJson()=>{
-    'Won Price Summary Id': wonPriceSummaryId,
-    'Store FK': storeFK,
-    'Winner Image URL': winnerImageURL,
-    'Winner Username': winnerUsername,
-    'Grand Price Description': grandPriceDescription,
-    'Store Image URL': storeImageURL,
-    'Store Name': storeName,
-    'Store Address': storeAddress,
-    'Won Date': wonDate,
-    'Is Male': isMale,
-  };
+  @override
+  Map<String, dynamic> toJson() {
+    Map<String, dynamic> map = super.toJson();
+    map.addAll({
+      'Won Price Summary Id': wonPriceSummaryId,
+      'Store FK': storeFK,
+      'Winner Image URL': winnerImageURL,
+      'Winner Username': winnerUsername,
+      'Grand Price Description': grandPriceDescription,
+      'Store Image URL': storeImageURL,
+      'Store Name': storeName,
+      'Store Section': storeSection,
+      'Won Date': wonDate,
+    });
+    return map;
+  }
 
-  factory WonPriceSummary.fromJson(dynamic json)=>WonPriceSummary(
-    wonPriceSummaryId: json['Won Price Summary Id'], 
-    storeFK: json['Store FK'],
-    winnerImageURL: json['Winner Image URL'], 
-    winnerUsername: json['Winner Username'], 
-    grandPriceDescription: json['Grand Price Description'], 
-    storeImageURL: json['Store Image URL'], 
-    storeName: json['Store Name'], 
-    storeAddress: json['Store Address'], 
-    wonDate: json['Won Date'],
-    isMale: json['Is Male']
-  );
-
+  factory WonPriceSummary.fromJson(dynamic json) => WonPriceSummary(
+      wonPriceSummaryId: json['Won Price Summary Id'],
+      storeFK: json['Store FK'],
+      winnerImageURL: json['Winner Image URL'],
+      winnerUsername: json['Winner Username'],
+      grandPriceDescription: json['Grand Price Description'],
+      storeImageURL: json['Store Image URL'],
+      storeName: json['Store Name'],
+      storeSection: json['Store Section'],
+      wonDate: json['Won Date'],
+      isFake: json['Is Fake'] == 'Yes' ? true : false);
 }

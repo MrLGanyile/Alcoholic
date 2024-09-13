@@ -1,5 +1,4 @@
-import '../graph theory/section_name.dart';
-import '../graph theory/utilities.dart';
+
 import 'old_store.dart';
 
 
@@ -9,7 +8,6 @@ class Location{
   String provinceOrState;
   String cityOrVillage;
   String townshipOrSuburb;
-  SectionName section;
   List<Store> stores;
 
   Location({
@@ -18,7 +16,6 @@ class Location{
     this.provinceOrState = 'Kwa Zulu Natal',
     this.cityOrVillage = 'Durban',
     this.townshipOrSuburb = 'Umlazi',
-    required this.section,
     this.stores = const [],
   });
 
@@ -36,7 +33,6 @@ class Location{
       'Province/State': provinceOrState,
       'City/Village': cityOrVillage,
       'Township/Suburb': townshipOrSuburb,
-      'Section/Area': Utilities.asString(section), 
       'Stores': map.toString(),
     };
   }
@@ -49,7 +45,6 @@ class Location{
       provinceOrState: json['Province/State'],
       cityOrVillage: json['City/Village'],
       townshipOrSuburb: json['Township/Suburb'],
-      section: json['Section/Area'],
       stores: json['Stores'], // Change To A List.
     );
   }

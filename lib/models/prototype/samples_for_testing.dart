@@ -2,8 +2,6 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:developer' as debug;
 
-
-
 import 'package:flutter/material.dart';
 
 import '../section_name.dart';
@@ -19,61 +17,49 @@ import 'old_user.dart';
 import 'old_won_price.dart';
 import 'utilities.dart';
 
-/**Inkinga Yakho Enkulu Ukuthi Awuzazi Ukuthi Ungubani Futhi Unani,
- * Uhamba Uzishayisa Ngesiphongo Ezindongeni, Kunento Eyimfihlo Okufanele Uyazi
- * Ngempilo Yakho.
- */
-class SampleForTesting{
-
+class SampleForTesting {
   static List<String> storeNames = [
-      'KwaNkuxa', 
-      'KwaNomusa', 
-      'Emathayini', 
-      'Mazithanqaze',
-
-      'Obubandayo',
-      'Zulu T.shop',
-      'Brash AAA BBB CCC DDD EEE FFF',
-      'Zenzele Liqior',
-
-      'Shona Khona', 
-      'Asambe Mf2', 
-      'Jombigazi', 
-      'Wafutshwala', 
-      
-      '626 Tavern',
-      'Ezinkukhwini',
-      'Sure Case',
-      'Lu\'s Corner',
-      
-      'Car Wash Sbu',
-      'Ola Lapho',
-      'Susek Go1',
-      'D1',
-
-    ];
+    'KwaNkuxa',
+    'KwaNomusa',
+    'Emathayini',
+    'Mazithanqaze',
+    'Obubandayo',
+    'Zulu T.shop',
+    'Brash AAA BBB CCC DDD EEE FFF',
+    'Zenzele Liqior',
+    'Shona Khona',
+    'Asambe Mf2',
+    'Jombigazi',
+    'Wafutshwala',
+    '626 Tavern',
+    'Ezinkukhwini',
+    'Sure Case',
+    'Lu\'s Corner',
+    'Car Wash Sbu',
+    'Ola Lapho',
+    'Susek Go1',
+    'D1',
+  ];
   static final List<Player> allRegisteredPlayers = [];
 
   static final List<Owner> allRegisteredOwners = [];
   static final List<Store> allRegisteredStores = [];
 
   static final List<Alcohol> allRegisteredAlcohol = [];
-  
+
   static final List<GrandPrice> allRegisteredGrandPrices = [];
   static final List<Competition> allRegisteredCompetitions = [];
   static final List<WonPrice> allRegisteredWonPrices = [];
-  
-  
-  SampleForTesting(){
-    
+
+  SampleForTesting() {
     createPlayers();
     //displayAllRegisteredPlayers(); // Working As Expected.
-    
+
     // Stores are created together with owners.
     // However they don't have any joined members nor do the have competitions.
-    createOwners(); 
+    createOwners();
     //displayAllRegisteredStores(); // Working As Expected.
-    
+
     // Add customers to stores and stores to customers.
     addJoinedMembersOnStores();
     //displayEachStoresJoinedMembers(); // Working As Expected.
@@ -83,118 +69,120 @@ class SampleForTesting{
 
     createGrandPrices();
     // displayAllRegisteredGrandPrices();  // Working As Expected.
-    
+
     // The competitions don't have winners.
     createCompetitions();
     //displayAllRegisteredCompetitions();  // Working As Expected.
-    
-    document.replaceAll('-','');
+
+    document.replaceAll('-', '');
     document.trim();
 
     createWonPrices();
     //displayAllRegisteredWonPrices();  // Working As Expected.
 
     //createAlcoholics();
-    
   }
 
-
   // Create all registered players
-  void createPlayers(){
+  void createPlayers() {
+    if (allRegisteredPlayers.isNotEmpty) {
+      return;
+    }
 
-    if(allRegisteredPlayers.isNotEmpty){return;}
-
-    List<String> usernames(){
-      
+    List<String> usernames() {
       List<String> usernames = [];
       String charactersToChooseFrom = 'abcdefghijklmnopqrstuvwxyz0123456789';
       Random random = Random();
-      
-      for(int j = 17;j>0;j--){
-        int randomLength = random.nextInt(6)+5;
+
+      for (int j = 17; j > 0; j--) {
+        int randomLength = random.nextInt(6) + 5;
         String username = '';
-        for(int i = 1; i<=randomLength;i++){
-          username += charactersToChooseFrom[i-1];
+        for (int i = 1; i <= randomLength; i++) {
+          username += charactersToChooseFrom[i - 1];
         }
         usernames.add(username);
       }
 
       return usernames;
     }
-  
-    List<String> passwords(){
 
+    List<String> passwords() {
       List<String> passwords = [];
       String charactersToChooseFrom = '0123456789';
       Random random = Random();
-      
-      for(int j = 17;j>0;j--){
-        int randomLength = random.nextInt(6)+5;
+
+      for (int j = 17; j > 0; j--) {
+        int randomLength = random.nextInt(6) + 5;
         String password = '';
-        for(int i = 1; i<=randomLength;i++){
-          password += charactersToChooseFrom[i-1];
+        for (int i = 1; i <= randomLength; i++) {
+          password += charactersToChooseFrom[i - 1];
         }
         passwords.add(password);
       }
 
       return passwords;
     }
-    
-    List<String> cellNumbers(){
+
+    List<String> cellNumbers() {
       Random random = Random();
       String numbers = '0123456789';
       List<String> cellNumbers = [];
 
-      for(int i = 17; i>0;i--){
+      for (int i = 17; i > 0; i--) {
         String number = '';
-        switch(random.nextInt(3)){
-          case 0 : number += '06'; break;
-          case 1 : number += '07'; break;
-          default: number += '08'; 
+        switch (random.nextInt(3)) {
+          case 0:
+            number += '06';
+            break;
+          case 1:
+            number += '07';
+            break;
+          default:
+            number += '08';
         }
-        for(int j = 1; j <=8;j++){
+        for (int j = 1; j <= 8; j++) {
           number += numbers[random.nextInt(numbers.length)];
         }
         cellNumbers.add(number);
       }
       return cellNumbers;
     }
-  
-    List<bool> genders(){
+
+    List<bool> genders() {
       List<bool> genders = [];
-      for(int i = 17; i > 0;i--){
+      for (int i = 17; i > 0; i--) {
         genders.add(Random().nextBool());
       }
       return genders;
     }
-  
-    List<String> picPaths(){
+
+    List<String> picPaths() {
       List<String> paths = [];
-      for(int i = 17; i > 0;i--){
-        paths.add('assets/users/players/');
+      for (int i = 17; i > 0; i--) {
+        paths.add('assets/users/alcoholics/');
       }
       return paths;
     }
 
-    List<String> picNames(){
+    List<String> picNames() {
       List<String> names = [];
-      for(int i = 17; i > 0;i--){
+      for (int i = 17; i > 0; i--) {
         names.add('$i.jpg');
       }
       return names;
     }
 
-    List<SectionName> sectionNames(){
+    List<SectionName> sectionNames() {
       List<SectionName> sectionNames = [];
-      
-      for(int j = 17;j>0;j--){
+
+      for (int j = 17; j > 0; j--) {
         sectionNames.add(Utilities.asSectionName(Random().nextInt(27)));
       }
 
       return sectionNames;
     }
 
-    for(int i = 0; i < 17; i++){
+    for (int i = 0; i < 17; i++) {
       allRegisteredPlayers.add(Player(
         username: usernames()[i],
         password: passwords()[i],
@@ -205,80 +193,75 @@ class SampleForTesting{
         picName: picNames()[i],
       ));
     }
-
-    
   }
 
   // Create all registered owners.
-  void createOwners(){
+  void createOwners() {
+    if (allRegisteredOwners.isNotEmpty) {
+      return;
+    }
 
-    if(allRegisteredOwners.isNotEmpty){return;}
-
-    List<String> usernames(){
-      
+    List<String> usernames() {
       List<String> usernames = [];
       String charactersToChooseFrom = 'abcdefghijklmnopqrstuvwxyz0123456789';
       Random random = Random();
-      
-      for(int j = 20;j>0;j--){
-        int randomLength = random.nextInt(6)+5;
+
+      for (int j = 20; j > 0; j--) {
+        int randomLength = random.nextInt(6) + 5;
         String username = '';
-        for(int i = 1; i<=randomLength;i++){
-          username += charactersToChooseFrom[i-1];
+        for (int i = 1; i <= randomLength; i++) {
+          username += charactersToChooseFrom[i - 1];
         }
         usernames.add(username);
       }
 
       return usernames;
     }
-  
-    List<String> passwords(){
 
+    List<String> passwords() {
       List<String> passwords = [];
       String charactersToChooseFrom = 'ABCDE';
       Random random = Random();
-      
-      for(int j = 20;j>0;j--){
+
+      for (int j = 20; j > 0; j--) {
         int randomLength = random.nextInt(5);
         String password = '';
-        for(int i = 1; i<=randomLength;i++){
-          password += charactersToChooseFrom[i-1];
+        for (int i = 1; i <= randomLength; i++) {
+          password += charactersToChooseFrom[i - 1];
         }
         passwords.add(password);
       }
 
       return passwords;
     }
-    
-    List<String> fullnames(){
-      
+
+    List<String> fullnames() {
       List<String> fullnames = [];
       String charactersToChooseFrom = 'abcdefghijklmnopqrstuvwxyz0123456789';
       Random random = Random();
-      
-      for(int j = 20;j>0;j--){
-        int randomLength = random.nextInt(6)+5;
+
+      for (int j = 20; j > 0; j--) {
+        int randomLength = random.nextInt(6) + 5;
         String fullname = '';
-        for(int i = 1; i<=randomLength;i++){
-          fullname += charactersToChooseFrom[i-1];
+        for (int i = 1; i <= randomLength; i++) {
+          fullname += charactersToChooseFrom[i - 1];
         }
         fullnames.add(fullname);
       }
 
       return fullnames;
     }
-  
-    List<String> surnames(){
-      
+
+    List<String> surnames() {
       List<String> surnames = [];
       String charactersToChooseFrom = 'abcdefghijklmnopqrstuvwxyz0123456789';
       Random random = Random();
-      
-      for(int j = 20;j>0;j--){
-        int randomLength = random.nextInt(6)+5;
+
+      for (int j = 20; j > 0; j--) {
+        int randomLength = random.nextInt(6) + 5;
         String surname = '';
-        for(int i = 1; i<=randomLength;i++){
-          surname += charactersToChooseFrom[i-1];
+        for (int i = 1; i <= randomLength; i++) {
+          surname += charactersToChooseFrom[i - 1];
         }
         surnames.add(surname);
       }
@@ -286,54 +269,58 @@ class SampleForTesting{
       return surnames;
     }
 
-    List<String> cellNumbers(){
+    List<String> cellNumbers() {
       Random random = Random();
       String numbers = '0123456789';
       List<String> cellNumbers = [];
 
-      for(int i = 20; i>0;i--){
+      for (int i = 20; i > 0; i--) {
         String number = '';
-        switch(random.nextInt(3)){
-          case 0 : number += '06'; break;
-          case 1 : number += '07'; break;
-          default: number += '08'; 
+        switch (random.nextInt(3)) {
+          case 0:
+            number += '06';
+            break;
+          case 1:
+            number += '07';
+            break;
+          default:
+            number += '08';
         }
-        for(int j = 1; j <=8;j++){
+        for (int j = 1; j <= 8; j++) {
           number += numbers[random.nextInt(numbers.length)];
         }
         cellNumbers.add(number);
       }
       return cellNumbers;
     }
-  
 
-    List<bool> genders(){
+    List<bool> genders() {
       List<bool> genders = [];
-      for(int i = 20; i > 0;i--){
+      for (int i = 20; i > 0; i--) {
         genders.add(Random().nextBool());
       }
       return genders;
     }
-  
-    List<String> imageLocations(){
+
+    List<String> imageLocations() {
       List<String> imageLocation = [];
-      for(int i = 20; i > 0;i--){
+      for (int i = 20; i > 0; i--) {
         imageLocation.add('assets/users/owners/$i.jpg');
       }
       return imageLocation;
     }
 
-    List<SectionName> sectionNames(){
+    List<SectionName> sectionNames() {
       List<SectionName> sectionNames = [];
-      
-      for(int j = 20;j>0;j--){
+
+      for (int j = 20; j > 0; j--) {
         sectionNames.add(Utilities.asSectionName(Random().nextInt(20)));
       }
 
       return sectionNames;
     }
 
-    for(int i = 0; i < 20; i++){
+    for (int i = 0; i < 20; i++) {
       Store store = createStore(sectionNames()[i], i);
 
       Owner owner = Owner(
@@ -349,10 +336,10 @@ class SampleForTesting{
       );
       allRegisteredOwners.add(owner);
 
-      store.storeOwner = owner; // Bidirectional composite relationship between a store and it owner.
+      store.storeOwner =
+          owner; // Bidirectional composite relationship between a store and it owner.
       allRegisteredStores.add(store);
 
-      
       /*==============================Save Store Into The DB=================================== */
       /*StoreController.storeController.saveStore(
 
@@ -364,21 +351,17 @@ class SampleForTesting{
       );*/
       /*========================================================================== */
     }
-
-    
-    
   }
 
   // Add customers to this store and stores to customers.
-  void addJoinedMembersOnStores(){
-
-    for(Store store in allRegisteredStores){
-      if(store.joinedMembers.isNotEmpty){
+  void addJoinedMembersOnStores() {
+    for (Store store in allRegisteredStores) {
+      if (store.joinedMembers.isNotEmpty) {
         return;
       }
     }
 
-    String random3Letters(){
+    String random3Letters() {
       String letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
       String username = '';
       Random random = Random();
@@ -387,63 +370,59 @@ class SampleForTesting{
       username += letters[random.nextInt(letters.length)];
 
       return username;
-  }
- 
-    
-    int randomNumberOfStores = 20/*Random().nextInt(allRegisteredStores.length)*/;
+    }
+
+    int randomNumberOfStores =
+        20 /*Random().nextInt(allRegisteredStores.length)*/;
     List<Store> storesList = [];
-    for(Store store in allRegisteredStores){
+    for (Store store in allRegisteredStores) {
       storesList.add(store);
     }
     //storesList.shuffle();
 
-    for(int i = 0; i < randomNumberOfStores;i++){
+    for (int i = 0; i < randomNumberOfStores; i++) {
       Store store = storesList[i];
-      Map<Player,String> joinedMembers = {};
+      Map<Player, String> joinedMembers = {};
       int randomNumberOfCustomersToAdd = Random().nextInt(17);
-      
+
       Player? player;
-      
-      for(int customerNo = 0; customerNo < randomNumberOfCustomersToAdd;customerNo++){
-        
-        do{
-          player = allRegisteredPlayers[Random().nextInt(allRegisteredPlayers.length)];
-        }while(joinedMembers.keys.contains(player));
+
+      for (int customerNo = 0;
+          customerNo < randomNumberOfCustomersToAdd;
+          customerNo++) {
+        do {
+          player = allRegisteredPlayers[
+              Random().nextInt(allRegisteredPlayers.length)];
+        } while (joinedMembers.keys.contains(player));
 
         joinedMembers[player] = random3Letters();
       }
 
       store.joinedMembers = joinedMembers;
-      
     }
-    
   }
-  
 
   // Create all registered stores without join members nor competitions.
-  Store createStore(SectionName sectionName, int storeIndex){
-    
+  Store createStore(SectionName sectionName, int storeIndex) {
     Store store = Store(
-      storeName: storeNames[storeIndex], 
-      picPath: 'assets/stores/', 
-      picName: '${storeIndex+1}.jpg', 
+      storeName: storeNames[storeIndex],
+      picPath: 'assets/stores/',
+      picName: '${storeIndex + 1}.jpg',
       address: Utilities.asString(sectionName),
       sectionName: sectionName,
       competitions: [],
     );
 
-    
-
     return store;
   }
-  
-  // Create all registered alcohol.
-  void createAlcohol(){
 
-    if(allRegisteredAlcohol.isNotEmpty){return;}
+  // Create all registered alcohol.
+  void createAlcohol() {
+    if (allRegisteredAlcohol.isNotEmpty) {
+      return;
+    }
 
     var descriptions = [
-
       //================================Cider================================
       'Savana 24x330ml',
       'Savana 12x330ml',
@@ -453,7 +432,7 @@ class SampleForTesting{
       'Savana 6x360ml',
 
       //================================Beer================================
-      
+
       'Castle Milk Stout 24x330ml',
       'Castle Milk Stout 12x330ml',
       'Castle Milk Stout 6x330ml',
@@ -526,145 +505,137 @@ class SampleForTesting{
       'Carling Black Label 24x360ml',
       'Carling Black Label 12x360ml',
       'Carling Black Label 6x360ml',*/
-      
-      ];
+    ];
     Random random = Random();
-    
-    for(int alcoholIndex = 0; alcoholIndex < descriptions.length;alcoholIndex++){
+
+    for (int alcoholIndex = 0;
+        alcoholIndex < descriptions.length;
+        alcoholIndex++) {
       String name = descriptions[alcoholIndex];
-      allRegisteredAlcohol.add(
-        Alcohol(
-          alcoholId: 'alcohol_abc',
-          storeFK: 'store_xyz',
-          fullname: name, 
-          volume: name.substring(name.lastIndexOf('x')+1), 
-          alcoholPercent: '${random.nextDouble()*45 + 5}', 
-          imageLocation: 'assets/alcohol/${alcoholIndex+1}.jpg', 
-          alcoholType: alcoholIndex<6?AlcoholType.cider:AlcoholType.beer,
-          drawGrandPriceFK: 'grand_price_321',
-        )
-      );
+      allRegisteredAlcohol.add(Alcohol(
+        alcoholId: 'alcohol_abc',
+        storeFK: 'store_xyz',
+        fullname: name,
+        volume: name.substring(name.lastIndexOf('x') + 1),
+        alcoholPercent: '${random.nextDouble() * 45 + 5}',
+        imageLocation: 'assets/alcohol/${alcoholIndex + 1}.jpg',
+        alcoholType: alcoholIndex < 6 ? AlcoholType.cider : AlcoholType.beer,
+        drawGrandPriceFK: 'grand_price_321',
+      ));
     }
   }
-  
-  // Create all registered grand prices.
-  void createGrandPrices(){
 
-    
+  // Create all registered grand prices.
+  void createGrandPrices() {
     Random random = Random();
-    int numberOfGrandPrices = 9/*random.nextInt(100)+30*/;
-    for(int grandPriceIndex = 0; grandPriceIndex < numberOfGrandPrices;grandPriceIndex++){
-      int numberOfAlcohols = 1/*random.nextInt(3)+1*/;
-      
+    int numberOfGrandPrices = 9 /*random.nextInt(100)+30*/;
+    for (int grandPriceIndex = 0;
+        grandPriceIndex < numberOfGrandPrices;
+        grandPriceIndex++) {
+      int numberOfAlcohols = 1 /*random.nextInt(3)+1*/;
+
       List<Alcohol> drinks = [];
       String description = '';
 
-      for(int i = 0; i < numberOfAlcohols;i++){
-
-        drinks.add(allRegisteredAlcohol[grandPriceIndex/*random.nextInt(allRegisteredAlcohol.length)*/]);
+      for (int i = 0; i < numberOfAlcohols; i++) {
+        drinks.add(allRegisteredAlcohol[
+            grandPriceIndex /*random.nextInt(allRegisteredAlcohol.length)*/]);
         description += drinks[i].fullname;
-        if(i+1<numberOfAlcohols){
+        if (i + 1 < numberOfAlcohols) {
           description += ' + ';
         }
       }
 
       allRegisteredGrandPrices.add(GrandPrice(
-        isPointed: false, 
-        drinks: drinks, 
-        description: description,
-        imageLocation: drinks[0].imageLocation
-      ));
+          isPointed: false,
+          drinks: drinks,
+          description: description,
+          imageLocation: drinks[0].imageLocation));
     }
-
   }
-  
-  // Create all registerd competitions with no winners yet.
-  void createCompetitions(){
-    
-    Random random = Random();
-    int numberOfCompetitions = /*random.nextInt(30)+*/1000;
 
-    for(int competitionNumber = 1; competitionNumber<=numberOfCompetitions;competitionNumber++){
+  // Create all registerd competitions with no winners yet.
+  void createCompetitions() {
+    Random random = Random();
+    int numberOfCompetitions = /*random.nextInt(30)+*/ 1000;
+
+    for (int competitionNumber = 1;
+        competitionNumber <= numberOfCompetitions;
+        competitionNumber++) {
       // alarm is diplayed well on comp with 4, 5, 6, 7 prices.
-      var numberOfPricesList = [4,5,6,7,8]; 
-      int maxNoOfGrandPrices = numberOfPricesList[random.nextInt(numberOfPricesList.length)];
+      var numberOfPricesList = [4, 5, 6, 7, 8];
+      int maxNoOfGrandPrices =
+          numberOfPricesList[random.nextInt(numberOfPricesList.length)];
 
       Set<GrandPrice> grandPrices = {};
 
-      for(int i = 0; i < maxNoOfGrandPrices;i++){
+      for (int i = 0; i < maxNoOfGrandPrices; i++) {
         bool isInserted = false;
 
-        do{
+        do {
           int initSize = grandPrices.length;
-          grandPrices.add(allRegisteredGrandPrices[(random.nextInt(allRegisteredGrandPrices.length))]);
-          if(initSize<grandPrices.length){
+          grandPrices.add(allRegisteredGrandPrices[
+              (random.nextInt(allRegisteredGrandPrices.length))]);
+          if (initSize < grandPrices.length) {
             isInserted = true;
           }
-        }while(!isInserted);
+        } while (!isInserted);
       }
-      
-      
+
       grandPrices.first.isPointed = true;
 
-      List<Player> createCompetitors(){
-
+      List<Player> createCompetitors() {
         Random random = Random();
-        int numberOfCompetitors = 10/*random.nextInt(50)*/;
-    
+        int numberOfCompetitors = 10 /*random.nextInt(50)*/;
+
         List<Player> competitors = [];
-    
+
         List<Player> players = [];
-        for(Player player in allRegisteredPlayers){
+        for (Player player in allRegisteredPlayers) {
           players.add(player);
         }
         players.shuffle();
-        for(int i = 0; i<numberOfCompetitors;i++){
+        for (int i = 0; i < numberOfCompetitors; i++) {
           competitors.add(players[i]);
         }
 
         return competitors;
       }
 
-
       List<Player> competitors = createCompetitors();
-      
+
       int year = 2024;
-      int month = 7; 
-      int day = 27; 
-      
+      int month = 9;
+      int day = 3;
+
       Competition competition = Competition(
-        joiningFee: random.nextDouble()*40 + 10, 
-        dateTime: DateTime(
-          year, 
-          month, 
-          day, 
-          22,
-          3+random.nextInt(6)
-        ), 
+        joiningFee: random.nextDouble() * 40 + 10,
+        dateTime: DateTime(year, month, day, 20, 21 + random.nextInt(6)),
         maxNoOfGrandPrices: maxNoOfGrandPrices,
-        grandPrices:grandPrices.toList(),
+        grandPrices: grandPrices.toList(),
         competitors: competitors,
         duration: const Duration(seconds: 10),
-        storeFK: allRegisteredStores[competitionNumber%20].storeId!,
+        storeFK: allRegisteredStores[competitionNumber % 20].storeId!,
       );
-      
+
       allRegisteredCompetitions.add(competition);
-      allRegisteredStores[competitionNumber%20].competitions.add(competition);
+      allRegisteredStores[competitionNumber % 20].competitions.add(competition);
     }
   }
-  
+
   // Create all registered Won Prices.
-  void createWonPrices(){
-    
+  void createWonPrices() {
     Random random = Random();
     DateTime justNow = DateTime.now();
 
-    for(Competition competition in allRegisteredCompetitions){
-      if(justNow.isAfter(competition.dateTime)){
+    for (Competition competition in allRegisteredCompetitions) {
+      if (justNow.isAfter(competition.dateTime)) {
         Store store = findStoreById(competition.storeFK)!;
-        competition.winner = competition.competitors[random.nextInt(competition.competitors.length)];
+        competition.winner = competition
+            .competitors[random.nextInt(competition.competitors.length)];
         WonPrice wonPrice = WonPrice(
-          grandPrice: competition.grandPrices[random.nextInt(competition.grandPrices.length)], 
+          grandPrice: competition
+              .grandPrices[random.nextInt(competition.grandPrices.length)],
           store: store,
           competition: competition,
         );
@@ -672,11 +643,10 @@ class SampleForTesting{
         store.lastWonPrice = wonPrice;
         allRegisteredWonPrices.add(wonPrice);
       }
-      
     }
   }
-  
-  String random3Letters(){
+
+  String random3Letters() {
     String letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     String username = '';
     Random random = Random();
@@ -687,48 +657,43 @@ class SampleForTesting{
     return username;
   }
 
-  static void displayAllRegisteredPlayers(){
-    for(Player player in allRegisteredPlayers){
+  static void displayAllRegisteredPlayers() {
+    for (Player player in allRegisteredPlayers) {
       debug.log('$player\n\n');
     }
   }
 
-  static void displayAllRegisteredStores(){
-
+  static void displayAllRegisteredStores() {
     debug.log('\n\n\n\n');
-    for(Store store in allRegisteredStores){
-      debug.log('$store\n\n')  ;
-    } 
+    for (Store store in allRegisteredStores) {
+      debug.log('$store\n\n');
+    }
   }
 
-  static void displayAllRegisteredAlcohol(){
-
+  static void displayAllRegisteredAlcohol() {
     debug.log('\n\n\n\n');
-    for(Alcohol alcohol in allRegisteredAlcohol){
-      debug.log('$alcohol\n\n')  ;
-    } 
+    for (Alcohol alcohol in allRegisteredAlcohol) {
+      debug.log('$alcohol\n\n');
+    }
   }
 
-  static void displayAllRegisteredGrandPrices(){
-
+  static void displayAllRegisteredGrandPrices() {
     debug.log('\n\n\n\n');
-    for(GrandPrice price in allRegisteredGrandPrices){
-      debug.log('$price\n\n')  ;
-    } 
+    for (GrandPrice price in allRegisteredGrandPrices) {
+      debug.log('$price\n\n');
+    }
   }
 
-  static void displayAllRegisteredCompetitions(){
-    for(Competition competition in allRegisteredCompetitions){
+  static void displayAllRegisteredCompetitions() {
+    for (Competition competition in allRegisteredCompetitions) {
       debug.log('$competition\n\n');
     }
   }
 
-  static void displayEachStoresJoinedMembers(){
-
-    for(Store store in allRegisteredStores){
-
+  static void displayEachStoresJoinedMembers() {
+    for (Store store in allRegisteredStores) {
       String details = 'Store Name: ${store.storeName} Joined Members: [';
-      for(Player joinedMember in store.joinedMembers.keys.toList()){
+      for (Player joinedMember in store.joinedMembers.keys.toList()) {
         details += '${joinedMember.username} ';
       }
       details += ']';
@@ -738,17 +703,16 @@ class SampleForTesting{
     }
   }
 
-  static void displayAllRegisteredWonPrices(){
-    for(WonPrice wonPrice in allRegisteredWonPrices){
+  static void displayAllRegisteredWonPrices() {
+    for (WonPrice wonPrice in allRegisteredWonPrices) {
       debug.log('$wonPrice\n\n');
     }
   }
 
-  
   // Retrieve owner's store.
-  Store? findStore(String ownerCellNumber){
-    for(Owner owner in allRegisteredOwners){
-      if(owner.cellNumber==ownerCellNumber){
+  Store? findStore(String ownerCellNumber) {
+    for (Owner owner in allRegisteredOwners) {
+      if (owner.cellNumber == ownerCellNumber) {
         return owner.store;
       }
     }
@@ -757,9 +721,9 @@ class SampleForTesting{
   }
 
   // Retrieve store.
-  Store? findStoreById(String storeId){
-    for(Store store in allRegisteredStores){
-      if(store.storeId==storeId){
+  Store? findStoreById(String storeId) {
+    for (Store store in allRegisteredStores) {
+      if (store.storeId == storeId) {
         return store;
       }
     }
@@ -767,9 +731,7 @@ class SampleForTesting{
     return null;
   }
 
-
-  static const String document = 
-  """
+  static const String document = """
   Story 1 - Two girls come into my place Girl A has a problem, 
   Girl B is here to help. Firstly I boil water, while waiting 
   for it to boil Girl A is busy playing around with it(e.g. 
