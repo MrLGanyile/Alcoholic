@@ -2,6 +2,7 @@
 
 import 'package:alcoholic/models/production/Utilities/may_be_fake.dart';
 
+// Competition & CompetitorGrid Have Similar IDs
 class GrandPricesGrid extends MayBeFake {
   String competitionPricesGridId;
   String competitionFK;
@@ -39,7 +40,7 @@ class GrandPricesGrid extends MayBeFake {
       'Number Of Grand Prices': numberOfGrandPrices,
       'Currently Pointed Token Index': currentlyPointedTokenIndex,
       'Grand Prices Order': grandPricesOrder,
-      'Duration': duration,
+      'Duration': duration.inSeconds,
       'Has Started': hasStarted,
       'Has Stopped': hasStopped,
     });
@@ -53,7 +54,7 @@ class GrandPricesGrid extends MayBeFake {
         numberOfGrandPrices: json['Number Of Grand Prices'],
         currentlyPointedTokenIndex: json['Currently Pointed Token Index'],
         grandPricesOrder: json['Grand Prices Order'],
-        duration: json['Duration'],
+        duration: Duration(seconds: json['Duration']),
         hasStarted: json['Has Started'],
         hasStopped: json['Has Stopped'],
         isFake: json['Is Fake'] == 'Yes' ? true : false);

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:developer' as debug;
+import 'dart:math';
 
 import 'package:alcoholic/models/production/stores/won_price_summary.dart';
 import 'package:get/get.dart';
@@ -159,6 +160,240 @@ class StoreController extends GetxController {
 
 /*======================Store Name Info [End]======================== */
 
+  void tokensCreationCloudFunction(
+      StoreDraw storeDraw, String grandPriceGridId, String competitorsGridId) {
+    // To be used when saving both grand price tokens and competitor tokens into the database.
+    DocumentReference reference;
+
+    // Query a collection of draw grand prices by getting draw grand prices for this particular StoreDraw.
+    Query<Map<String, dynamic>> drawGrandPricesQuery = FirebaseFirestore
+        .instance
+        .collection(
+            'store/${storeDraw.storeFK}/store_draws/${storeDraw.storeDrawId}/draw_grand_prices')
+        .where('Store Draw Id', isEqualTo: storeDraw.storeDrawId);
+
+    // Store all the retrieved draw grand prices as a list.
+    Stream<List<DrawGrandPrice>> drawGrandPrices =
+        drawGrandPricesQuery.snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) {
+        DrawGrandPrice drawGrandPrice = DrawGrandPrice.fromJson(doc);
+        return drawGrandPrice;
+      }).toList();
+    });
+
+    // Convert each drawGrandPrice into a grandPriceToken and save it.
+    drawGrandPrices.forEach((list) async {
+      for (var i = 0; i < list.length; i++) {
+        DrawGrandPrice drawGrandPrice = list[i];
+        reference = FirebaseFirestore.instance
+            .collection(
+                'competitions/${storeDraw.storeDrawId}grand_prices_grid/$grandPriceGridId/grand_price_tokens')
+            .doc(drawGrandPrice.grandPriceId);
+
+        await reference
+            .set(GrandPriceToken.fromDrawGrandPrice(drawGrandPrice).toJson());
+      }
+    });
+
+    // Query a collection of draw competitors by getting draw competitors for this particular StoreDraw.
+    Query<Map<String, dynamic>> drawCompetitorsQuery = FirebaseFirestore
+        .instance
+        .collection(
+            'store/${storeDraw.storeFK}/store_draws/${storeDraw.storeDrawId}/draw_competitors')
+        .where('Store Draw Id', isEqualTo: storeDraw.storeDrawId);
+
+    // Store all the retrieved draw competitors as a list.
+    Stream<List<DrawCompetitor>> drawCompetitors =
+        drawCompetitorsQuery.snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) {
+        DrawCompetitor drawCompetitor = DrawCompetitor.fromJson(doc);
+        return drawCompetitor;
+      }).toList();
+    });
+
+    // Convert each drawCompetitor into a competitorToken and save it.
+    drawCompetitors.forEach((list) async {
+      for (var i = 0; i < list.length; i++) {
+        DrawCompetitor drawCompetitor = list[i];
+        reference = FirebaseFirestore.instance
+            .collection(
+                'competitions/${storeDraw.storeDrawId}/competitors_grids/$competitorsGridId/competitors_tokens')
+            .doc(drawCompetitor.competitorId);
+
+        await reference
+            .set(CompetitorToken.fromDrawCompetitor(drawCompetitor).toJson());
+      }
+    });
+  }
+
+  void createCompetitionCloudFunciton() {
+    DateTime justNow = DateTime.now();
+
+    // Retrieve all stores in order to check their store draws.
+    Stream<List<Store>> allStores = FirebaseFirestore.instance
+        .collection('stores')
+        .snapshots()
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => Store.fromJson(doc.data())).toList());
+
+    allStores.forEach((list) {
+      for (var i = 0; i < list.length; i++) {
+        Store store = list[i];
+
+        // Query the store draws that will be playing in the next 5 minutes.
+        Query<Map<String, dynamic>> storeDrawsQuery = FirebaseFirestore.instance
+            .collection('store/${store.storeOwnerPhoneNumber}/store_draws')
+            .where('Draw Date & Time',
+                isLessThanOrEqualTo: justNow.add(const Duration(minutes: 5)),
+                isGreaterThanOrEqualTo: justNow);
+
+        Stream<List<StoreDraw>> storeDraws =
+            storeDrawsQuery.snapshots().map((snapshot) {
+          return snapshot.docs.map((doc) {
+            StoreDraw storeDraw = StoreDraw.fromJson(doc);
+            storeDraw.isOpen = false;
+            // Close Store Draw -> No more updates are allowed on a store draw.
+            updateIsOpen(
+                storeDraw.storeFK, storeDraw.storeDrawId, storeDraw.isOpen);
+            return storeDraw;
+          }).toList();
+        });
+
+        storeDraws.forEach((list) async {
+          for (var i = 0; i < list.length; i++) {
+            StoreDraw storeDraw = list[i];
+            // Used to create the number of iterations when picking grand price to be won and a winner.
+            int randomNoOfRepeataions = 3 + Random().nextInt(3);
+            // Time it would take to pick a grand price to be won.
+            Duration duration = Duration(
+                seconds: storeDraw.numberOfGrandPrices * randomNoOfRepeataions);
+
+            // The order of visiting the grand prices, the last one is the one to be given to the winner.
+            List<int> grandPricesOrder = [];
+
+            // Create the order with which grand prices will be visited.
+            int index;
+            // Make sure all grand prices are visited.
+            for (index = 0; index < storeDraw.numberOfGrandPrices; index++) {
+              grandPricesOrder.add(index);
+            }
+
+            // Create additional way to visit grand prices.
+            for (index = storeDraw.numberOfGrandPrices;
+                index < duration.inSeconds;
+                index++) {
+              grandPricesOrder
+                  .add(Random().nextInt(storeDraw.numberOfGrandPrices));
+            }
+
+            // Suffle the list to make sure the order is random.
+            grandPricesOrder.shuffle();
+
+            DocumentReference grandPricesGridReference = FirebaseFirestore
+                .instance
+                .collection(
+                    'competitions/${storeDraw.storeDrawId}/grand_prices_grids/')
+                .doc();
+
+            GrandPricesGrid grandPricesGrid = GrandPricesGrid(
+                competitionPricesGridId: grandPricesGridReference.id,
+                competitionFK: storeDraw.storeDrawId,
+                numberOfGrandPrices: storeDraw.numberOfGrandPrices,
+                currentlyPointedTokenIndex: 0,
+                grandPricesOrder: grandPricesOrder,
+                duration: duration);
+
+            // Time it would take to pick a winner.
+            duration = Duration(
+                seconds: storeDraw.numberOfGrandPrices * randomNoOfRepeataions);
+            // The order of visiting competitors are kept here.
+            List<int> competitorsOrder = [];
+
+            // Make sure all competitors are visited.
+            for (index = 0;
+                index < storeDraw.numberOfCompetitorsSoFar;
+                index++) {
+              competitorsOrder.add(index);
+            }
+
+            // Create additional way of visiting competitors.
+            for (index = storeDraw.numberOfCompetitorsSoFar;
+                index < duration.inSeconds;
+                index++) {
+              competitorsOrder
+                  .add(Random().nextInt(storeDraw.numberOfCompetitorsSoFar));
+            }
+
+            // Make sure competitors are visited randomly.
+            competitorsOrder.shuffle();
+
+            // Create a duration it takes to pick a winner.
+            if (storeDraw.numberOfCompetitorsSoFar <= 20) {
+              duration =
+                  Duration(seconds: storeDraw.numberOfCompetitorsSoFar * 6);
+            } else if (storeDraw.numberOfCompetitorsSoFar <= 50) {
+              duration =
+                  Duration(seconds: storeDraw.numberOfCompetitorsSoFar * 5);
+            } else if (storeDraw.numberOfCompetitorsSoFar <= 100) {
+              duration =
+                  Duration(seconds: storeDraw.numberOfCompetitorsSoFar + 20);
+            } else if (storeDraw.numberOfCompetitorsSoFar <= 200) {
+              duration =
+                  Duration(seconds: storeDraw.numberOfCompetitorsSoFar + 30);
+            } else if (storeDraw.numberOfCompetitorsSoFar <= 500) {
+              duration =
+                  Duration(seconds: storeDraw.numberOfCompetitorsSoFar + 50);
+            } else if (storeDraw.numberOfCompetitorsSoFar <= 1000) {
+              duration =
+                  Duration(seconds: storeDraw.numberOfCompetitorsSoFar + 30);
+            } else {
+              duration =
+                  Duration(seconds: storeDraw.numberOfCompetitorsSoFar + 60);
+            }
+
+            DocumentReference competitorsGridReference = FirebaseFirestore
+                .instance
+                .collection(
+                    'competitions/${storeDraw.storeDrawId}/competitors_grids/')
+                .doc();
+
+            CompetitorsGrid competitorsGrid = CompetitorsGrid(
+                competitorsGridId: competitorsGridReference.id,
+                competitionFK: storeDraw.storeDrawId,
+                numberOfCompetitors: storeDraw.numberOfCompetitorsSoFar,
+                currentlyPointedTokenIndex: 0,
+                competitorsOrder: competitorsOrder,
+                duration: duration);
+
+            tokensCreationCloudFunction(
+                storeDraw,
+                grandPricesGrid.competitionPricesGridId,
+                competitorsGrid.competitorsGridId);
+
+            DocumentReference competitionReference = FirebaseFirestore.instance
+                .collection('competitions/')
+                .doc(storeDraw.storeDrawId);
+
+            Competition competition = Competition(
+                competitionId: competitionReference.id,
+                storeFK: storeDraw.storeFK,
+                storeImageLocation: storeDraw.storeImageURL,
+                storeName: storeDraw.storeName,
+                storeSectionName: storeDraw.sectionName,
+                grandPricesGrid: grandPricesGrid,
+                competitorsGrid: competitorsGrid,
+                dateTime: storeDraw.drawDateAndTime,
+                joiningFee: storeDraw.joiningFee);
+
+            await grandPricesGridReference.set(grandPricesGrid.toJson());
+            await competitionReference.set(competitorsGrid.toJson());
+            await competitionReference.set(competition.toJson());
+          }
+        });
+      }
+    });
+  }
+
   /*=========================Store Draws [Start]========================= */
   void saveStoreDraw(
       String storeFK,
@@ -202,7 +437,7 @@ class StoreController extends GetxController {
       );
 
       // 3. Save store draw object
-      reference.set(storeDraw);
+      reference.set(storeDraw.toJson());
 
       Get.snackbar("Store Draw Saved", "New Store Draw Was Saved Successfully");
       showProgressBar = false;

@@ -305,7 +305,7 @@ class OnWaitWidgetState extends State<OnWaitWidget> {
           ],
         );
         break;
-      case 8:
+      default:
         grid = Column(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
@@ -356,69 +356,6 @@ class OnWaitWidgetState extends State<OnWaitWidget> {
                   // Bottom Right Grand Price.
                   CompetitionScreenHelper(
                       storeDraw: widget.storeDraw, grandPriceIndex: 7),
-                ],
-              ),
-            ),
-          ],
-        );
-        break;
-      default:
-        grid = Column(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                buildAlarm(),
-              ],
-            ),
-            Padding(
-              padding: EdgeInsets.only(bottom: horizontalGrandPriceSpaceces),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Top Left Grand Price.
-                  CompetitionScreenHelper(
-                      storeDraw: widget.storeDraw, grandPriceIndex: 0),
-                  // Top Right Grand Price.
-                  CompetitionScreenHelper(
-                      storeDraw: widget.storeDraw, grandPriceIndex: 1),
-                  // Middle Top Grand Price.
-                  CompetitionScreenHelper(
-                      storeDraw: widget.storeDraw, grandPriceIndex: 2),
-                ],
-              ),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // Middle Right Grand Price.
-                CompetitionScreenHelper(
-                    storeDraw: widget.storeDraw, grandPriceIndex: 3),
-                // Middle Left Grand Price.
-                CompetitionScreenHelper(
-                    storeDraw: widget.storeDraw, grandPriceIndex: 4),
-                // Middle Grand Price.
-                CompetitionScreenHelper(
-                    storeDraw: widget.storeDraw, grandPriceIndex: 5),
-              ],
-            ),
-            Padding(
-              padding: EdgeInsets.only(
-                  top: horizontalGrandPriceSpaceces,
-                  bottom: horizontalGrandPriceSpaceces),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Bottom Left Grand Price.
-                  CompetitionScreenHelper(
-                      storeDraw: widget.storeDraw, grandPriceIndex: 6),
-                  // Middle Bottom Grand Price.
-                  CompetitionScreenHelper(
-                      storeDraw: widget.storeDraw, grandPriceIndex: 7),
-                  // Bottom Right Grand Price.
-                  CompetitionScreenHelper(
-                      storeDraw: widget.storeDraw, grandPriceIndex: 8),
                 ],
               ),
             ),

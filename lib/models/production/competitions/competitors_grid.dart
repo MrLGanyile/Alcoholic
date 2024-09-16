@@ -2,6 +2,7 @@
 /competitors_grids*/
 import 'package:alcoholic/models/production/Utilities/may_be_fake.dart';
 
+// Competition & CompetitorGrid Have Similar IDs
 class CompetitorsGrid extends MayBeFake {
   String competitorsGridId;
   String competitionFK;
@@ -39,7 +40,7 @@ class CompetitorsGrid extends MayBeFake {
       'Number Of Competitors': numberOfCompetitors,
       'Currently Pointed Token Index': currentlyPointedTokenIndex,
       'Competitors Order': competitorsOrder,
-      'Duration': duration,
+      'Duration': duration.inSeconds,
       'Has Started': hasStarted,
       'Has Stopped': hasStopped,
     });
@@ -53,7 +54,7 @@ class CompetitorsGrid extends MayBeFake {
         numberOfCompetitors: json['Number Of Competitors'],
         currentlyPointedTokenIndex: json['Currently Pointed Token Index'],
         competitorsOrder: json['Competitors Order'],
-        duration: json['Duration'],
+        duration: Duration(seconds: json['Duration']),
         hasStarted: json['Has Started'],
         hasStopped: json['Has Stopped'],
         isFake: json['Is Fake'] == 'Yes' ? true : false);

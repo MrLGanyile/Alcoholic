@@ -398,7 +398,7 @@ class StoreNameInfoWidgetState extends State<StoreNameInfoWidget> {
       widget.storeNameInfo.isOpened
           ? StoreStateWidget(
               store: widget.sampleForTesting
-                  .findStoreById(widget.storeNameInfo.storeFK)!,
+                  .findStoreById(widget.storeNameInfo.storeNameInfoId)!,
               sampleForTesting: widget.sampleForTesting,
             )
           : const SizedBox.shrink()

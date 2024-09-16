@@ -40,8 +40,9 @@ class StoreNameInfoWidgetState extends State<StoreNameInfoWidget> {
   @override
   void initState() {
     super.initState();
-    commingStoreDraws = storeController
-        .findStoreDraws(widget.storeNameInfo.storeFK) as List<StoreDraw>;
+    commingStoreDraws =
+        storeController.findStoreDraws(widget.storeNameInfo.storeNameInfoId)
+            as List<StoreDraw>;
   }
 
   EdgeInsets storeHeadingPadding =
@@ -404,7 +405,7 @@ class StoreNameInfoWidgetState extends State<StoreNameInfoWidget> {
 
         widget.storeNameInfo.isOpened
             ? StoreStateWidget(
-                storeId: widget.storeNameInfo.storeFK,
+                storeId: widget.storeNameInfo.storeNameInfoId,
                 commingStoreDraws: commingStoreDraws,
               )
             : const SizedBox.shrink(),

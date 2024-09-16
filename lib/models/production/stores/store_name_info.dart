@@ -7,7 +7,6 @@ import 'store_state.dart';
 // {Collection Name - /stores_names_info}
 class StoreNameInfo extends MayBeFake {
   String storeNameInfoId; // Must be the same as the storeId for some store.
-  String storeFK;
   String storeName;
   String storeImageURL;
   SectionName sectionName;
@@ -18,7 +17,6 @@ class StoreNameInfo extends MayBeFake {
 
   StoreNameInfo({
     required this.storeNameInfoId,
-    required this.storeFK,
     required this.storeName,
     required this.storeImageURL,
     required this.sectionName,
@@ -32,7 +30,6 @@ class StoreNameInfo extends MayBeFake {
     Map<String, dynamic> map = super.toJson();
     map.addAll({
       'Store Name Info Id': storeNameInfoId,
-      'Store FK': storeFK,
       'Store Name': storeName,
       'Store Image URL': storeImageURL,
       'Section Name': sectionName,
@@ -59,7 +56,6 @@ class StoreNameInfo extends MayBeFake {
   factory StoreNameInfo.fromJson(dynamic json) {
     return StoreNameInfo(
         storeNameInfoId: json['Store Name Info Id'],
-        storeFK: json['Store FK'],
         storeName: json['Store Name'],
         storeImageURL: json['Store Image URL'],
         sectionName: json['Section Name'],

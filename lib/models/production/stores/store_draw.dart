@@ -38,7 +38,13 @@ class StoreDraw extends MayBeFake {
     map.addAll({
       'Store Draw Id': storeDrawId,
       'Store FK': storeFK,
-      'Draw Date & Time': drawDateAndTime,
+      'Draw Date & Time': {
+        'year': drawDateAndTime.year,
+        'month': drawDateAndTime.month,
+        'day': drawDateAndTime.day,
+        'hour': drawDateAndTime.hour,
+        'minute': drawDateAndTime.minute,
+      },
       'Joining Fee': joiningFee,
       'Number Of Grand Prices': numberOfGrandPrices,
       'Number of Competitors So Far': numberOfCompetitorsSoFar,
@@ -53,7 +59,13 @@ class StoreDraw extends MayBeFake {
   factory StoreDraw.fromJson(dynamic json) => StoreDraw(
       storeDrawId: json['Store Draw Id'],
       storeFK: json['Store FK'],
-      drawDateAndTime: json['Draw Date & Time'],
+      drawDateAndTime: DateTime(
+        json['Draw Date & Time']['year'],
+        json['Draw Date & Time']['month'],
+        json['Draw Date & Time']['day'],
+        json['Draw Date & Time']['hour'],
+        json['Draw Date & Time']['minute'],
+      ),
       joiningFee: json['Joining Fee'],
       numberOfGrandPrices: json['Number Of Grand Prices'],
       numberOfCompetitorsSoFar: json['Number of Competitors So Far'],

@@ -6,8 +6,10 @@ import 'package:alcoholic/models/production/Utilities/may_be_fake.dart';
 
 import '../stores/draw_grand_price.dart';
 
+// Competition & CompetitorGrid Have Similar IDs
 class GrandPriceToken extends MayBeFake {
   String grandPriceTokenId;
+  String grandPriceGridFK;
   int tokenIndex;
   bool isPointed;
   String imageURL;
@@ -15,6 +17,7 @@ class GrandPriceToken extends MayBeFake {
 
   GrandPriceToken({
     required this.grandPriceTokenId,
+    required this.grandPriceGridFK,
     required this.tokenIndex,
     required this.isPointed,
     required this.imageURL,
@@ -27,6 +30,7 @@ class GrandPriceToken extends MayBeFake {
     Map<String, dynamic> map = super.toJson();
     map.addAll({
       'Grand Price Token Id': grandPriceTokenId,
+      'Grand Price Grid FK': grandPriceGridFK,
       'Token Index': tokenIndex,
       'Is Pointed': isPointed,
       'Grand Price Image URL': imageURL,
@@ -38,6 +42,7 @@ class GrandPriceToken extends MayBeFake {
   factory GrandPriceToken.fromJson(dynamic json) {
     return GrandPriceToken(
         grandPriceTokenId: json['Grand Price Token Id'],
+        grandPriceGridFK: json['Grand Price Grid FK'],
         tokenIndex: json['Token Index'],
         isPointed: json['Is Pointed'],
         imageURL: json['Grand Price Image URL'],
@@ -48,6 +53,7 @@ class GrandPriceToken extends MayBeFake {
   factory GrandPriceToken.fromDrawGrandPrice(DrawGrandPrice drawGrandPrice) {
     return GrandPriceToken(
         grandPriceTokenId: drawGrandPrice.grandPriceId,
+        grandPriceGridFK: drawGrandPrice.storeDrawFK,
         tokenIndex: drawGrandPrice.grandPriceIndex,
         isPointed: false,
         imageURL: '',

@@ -4,9 +4,10 @@
 import 'package:alcoholic/models/production/Utilities/may_be_fake.dart';
 import 'package:alcoholic/models/production/stores/draw_competitor.dart';
 
+// Competition & CompetitorGrid Have Similar IDs
 class CompetitorToken extends MayBeFake {
   String competitorTokenId;
-  String? competitorsGridFK;
+  String competitorsGridFK;
   int tokenIndex;
   bool isPointed;
   String competitionCompetitorImageLocation;
@@ -14,7 +15,7 @@ class CompetitorToken extends MayBeFake {
 
   CompetitorToken({
     required this.competitorTokenId,
-    this.competitorsGridFK,
+    required this.competitorsGridFK,
     required this.tokenIndex,
     required this.isPointed,
     required this.competitionCompetitorImageLocation,
@@ -50,6 +51,7 @@ class CompetitorToken extends MayBeFake {
   factory CompetitorToken.fromDrawCompetitor(DrawCompetitor drawCompetitor) {
     return CompetitorToken(
       competitorTokenId: drawCompetitor.competitorId,
+      competitorsGridFK: drawCompetitor.storeDrawFK,
       tokenIndex: drawCompetitor.competitorNumber,
       isPointed: false,
       competitionCompetitorImageLocation: drawCompetitor.imageURL,

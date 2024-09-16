@@ -48,7 +48,6 @@ class StoresWidgetState extends State<StoresWidget> {
     for (Store store in allAvailableStores) {
       StoreNameInfo storeNameInfo = StoreNameInfo(
           storeNameInfoId: store.storeId!,
-          storeFK: store.storeId!,
           storeName: store.storeName,
           storeImageURL: store.picPath + store.picName,
           sectionName: store.sectionName);

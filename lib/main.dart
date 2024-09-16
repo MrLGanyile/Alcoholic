@@ -57,7 +57,7 @@ class MyApplication extends StatefulWidget {
 
   static String title = 'Alcoholic';
   final SampleForTesting sampleForTesting = SampleForTesting();
-  final ProductionTesting productionTesting = ProductionTesting();
+  //final ProductionTesting productionTesting = ProductionTesting();
   // Assets are not added into the pubspec.yaml file.
 
   static EdgeInsets storeDataPadding =
