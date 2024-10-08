@@ -227,9 +227,12 @@ class _AlcoholicRegistrationWidgetState
                                   */
                                   verificationCompleted:
                                       (PhoneAuthCredential credential) async {
+                                    debug.log('1. About To Signed In User...');
                                     // ANDROID ONLY!
                                     // Sign the user in (or link) with the auto-generated credential
                                     await auth.signInWithCredential(credential);
+                                    debug.log(
+                                        '1. Successfully Signed In User...');
                                   },
                                   verificationFailed:
                                       (FirebaseAuthException e) {
@@ -263,8 +266,11 @@ class _AlcoholicRegistrationWidgetState
                                             verificationId: verificationId,
                                             smsCode: smsCode);
 
+                                    debug.log('2. About To Signed In User...');
                                     // Sign the user in (or link) with the credential
                                     await auth.signInWithCredential(credential);
+                                    debug.log(
+                                        '2. Successfully Signed In User...');
                                   },
                                   /*
                                   By default, Firebase will not re-send a new SMS message if 

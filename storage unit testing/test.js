@@ -5,6 +5,7 @@ import {
     initializeTestEnvironment,
     
   } from "@firebase/rules-unit-testing";
+import { test } from 'mocha';
 
 
 
@@ -106,13 +107,13 @@ describe('Our Alcoholic App',()=>{
     await testEnv.withSecurityRulesDisabled(async context=>{
 
       return context.storage().ref()
-      .child('/store_owners/+27661813561/store_images/+27661813561')
+      .child('/store_owners/stores_images/+27661813561')
       .put(file5MB).then()
     });
     await testEnv.withSecurityRulesDisabled(async context=>{
 
       return context.storage().ref()
-      .child('/store_owners/+27654543217/store_images/+27654543217')
+      .child('/store_owners/stores_images/+27654543217')
       .put(file5MB).then()
     });
 
@@ -120,13 +121,26 @@ describe('Our Alcoholic App',()=>{
     await testEnv.withSecurityRulesDisabled(async context=>{
 
       return context.storage().ref()
-      .child(`/store_owners/${storeOwnerData.phoneNumber}/store_owners_images/${storeOwnerData.phoneNumber}`)
+      .child(`/store_owners/store_owners_images/${storeOwnerData.phoneNumber}`)
       .put(file5MB).then()
     });
     await testEnv.withSecurityRulesDisabled(async context=>{
 
       return context.storage().ref()
-      .child(`/store_owners/${theirStoreOwnerData.phoneNumber}/store_owners_images/${theirStoreOwnerData.phoneNumber}`)
+      .child(`/store_owners/store_owners_images/${theirStoreOwnerData.phoneNumber}`)
+      .put(file5MB).then()
+    });
+
+    // Initialize store owner identity documents images
+    await testEnv.withSecurityRulesDisabled(async context=>{
+      return context.storage().ref()
+      .child(`/store_owners/store_owners_ids/${theirStoreOwnerData.phoneNumber}`)
+      .put(file5MB).then()
+    });
+
+    await testEnv.withSecurityRulesDisabled(async context=>{
+      return context.storage().ref()
+      .child(`/store_owners/store_owners_ids/${storeOwnerData.phoneNumber}`)
       .put(file5MB).then()
     });
 
@@ -134,17 +148,17 @@ describe('Our Alcoholic App',()=>{
     await testEnv.withSecurityRulesDisabled(async context=>{
 
       return context.storage().ref()
-      .child(`/alcoholics/${myUserData.phoneNumber}/profile_images/${myUserData.phoneNumber}`)
+      .child(`/alcoholics/profile_images/${myUserData.phoneNumber}`)
       .put(file5MB).then()
     });
 
-    // Initialize store owner identity documents images
     await testEnv.withSecurityRulesDisabled(async context=>{
 
       return context.storage().ref()
-      .child(`/alcoholics/${theirUserData.phoneNumber}/profile_images/${theirUserData.phoneNumber}`)
+      .child(`/alcoholics/profile_images/${theirUserData.phoneNumber}`)
       .put(file5MB).then()
     });
+
 
     // Initialize stores in the database.
     await testEnv.withSecurityRulesDisabled(context=>{
@@ -192,37 +206,27 @@ describe('Our Alcoholic App',()=>{
   // await assertFails(ref.updateMetadata({})
   //================================Store Images [Start]====================================
 
-  // Testing /store_owners/{storeOwnerId}/store_images/{storeImageId}
+  // Testing /store_owners/stores_images/{storeImageId}
   it('Offline User : Do not allow not logged in users to upload a store image during store registration.', async()=>{
     
     await assertFails(
       noUser.storage().ref()
-      .child('/store_owners/'+someId+'/store_images/'+someId).put(file5MB)
+      .child('/store_owners/stores_images/'+someId).put(file5MB)
       .then()
     );
   }); 
 
-  // Testing /store_owners/{storeOwnerId}/store_images/{storeImageId}
+  // Testing /store_owners/stores_images/{storeImageId}
   it('Online User : Do not allow logged in users to upload store images with doc id different from their uid[1].', async()=>{
     
     await assertFails(
       myUser.storage().ref()
-      .child('/store_owners/'+myUserData.phoneNumber+'/store_images/'+someId).put(file5MB)
+      .child('/store_owners/stores_images/'+someId).put(file5MB)
       .then()
     );
   }); 
 
-  // Testing /store_owners/{storeOwnerId}/store_images/{storeImageId}
-  it('Online User : Do not allow logged in users to upload store images with doc id different from store owner doc id[2].', async()=>{
-    
-    await assertFails(
-      myUser.storage().ref()
-      .child('/store_owners/'+someId+'/store_images/'+myUserData.phoneNumber).put(file5MB)
-      .then()
-    );
-  }); 
-
-  // Testing /store_owners/{storeOwnerId}/store_images/{storeImageId}
+  // Testing /store_owners/stores_images/{storeImageId}
   it('Online User : Do not allow logged in users to upload store images if they are already store owners[3].', async()=>{
     
     await testEnv.withSecurityRulesDisabled(context=>{
@@ -232,12 +236,12 @@ describe('Our Alcoholic App',()=>{
 
     await assertFails(
       myUser.storage().ref()
-      .child('/store_owners/'+myUserData.phoneNumber+'/store_images/'+myUserData.phoneNumber).put(file5MB)
+      .child('/store_owners/stores_images/'+myUserData.phoneNumber).put(file5MB)
       .then()
     );
   }); 
 
-  // Testing /store_owners/{storeOwnerId}/store_images/{storeImageId}
+  // Testing /store_owners/stores_images/{storeImageId}
   it('Online User : Do not allow logged in users to upload store images if they have already[4].', async()=>{
     
     const storeData = {
@@ -253,38 +257,37 @@ describe('Our Alcoholic App',()=>{
 
     await assertFails(
       myUser.storage().ref()
-      .child('/store_owners/'+myUserData.phoneNumber+'/store_images/'+myUserData.phoneNumber).put(file5MB)
+      .child('/store_owners/stores_images/'+myUserData.phoneNumber).put(file5MB)
       .then()
     );
   }); 
 
-  // Testing /store_owners/{storeOwnerId}/store_images/{storeImageId}
+  // Testing /store_owners/stores_images/{storeImageId}
   it('Online User : Do not allow logged in users to upload store images with huge size[5].', async()=>{
     
     await assertFails(
       myUser.storage().ref()
-      .child('/store_owners/'+myUserData.phoneNumber+'/store_images/'+myUserData.phoneNumber).put(file6MB)
+      .child('/store_owners/stores_images/'+myUserData.phoneNumber).put(file6MB)
       .then()
     );
   });
 
-  // Testing /store_owners/{storeOwnerId}/store_images/{storeImageId}
+  // Testing /store_owners/stores_images/{storeImageId}
   it('Online User : Allow logged in users to upload store images.', async()=>{
     
     await assertSucceeds(
       myUser.storage().ref()
-      .child('/store_owners/'+myUserData.phoneNumber+'/store_images/'+myUserData.phoneNumber).put(file5MB)
+      .child('/store_owners/stores_images/'+myUserData.phoneNumber).put(file5MB)
       .then()
     );
   });
 
-  // Testing /store_owners/{storeOwnerId}/store_images/{storeImageId}
+  // Testing /store_owners/stores_images/{storeImageId}
   it('Store Owner : Do not allow store owners to upload store images.', async()=>{
     
     await assertFails(
       storeOwnerUser.storage().ref()
-      .child('/store_owners/'+storeOwnerData.phoneNumber+
-        '/store_images/'+store1Data.storeOwnerPhoneNumber).put(file5MB)
+      .child('/store_owners/stores_images/'+store1Data.storeOwnerPhoneNumber).put(file5MB)
       .then()
     );
   }); 
@@ -293,33 +296,33 @@ describe('Our Alcoholic App',()=>{
 
 
 
-  // Testing /store_owners/{storeOwnerId}/store_images/{storeImageId}
+  // Testing /store_owners/stores_images/{storeImageId}
   it('Offline User : Allow not logged in users to view store images.', async()=>{
     
     const storage = noUser.storage();
       const storageRef = storage.ref(
-        `/store_owners/${storeOwnerData.phoneNumber}/store_images/${storeOwnerData.phoneNumber}`,
+        `/store_owners/stores_images/${storeOwnerData.phoneNumber}`,
       );
 
     await assertSucceeds(storageRef.getDownloadURL());
   }); 
 
-  // Testing /store_owners/{storeOwnerId}/store_images/{storeImageId}
+  // Testing /store_owners/stores_images/{storeImageId}
   it('Online User : Do not allow logged in users to view store images.', async()=>{
     
     const storage = myUser.storage();
       const storageRef = storage.ref()
-      .child(`/store_owners/${storeOwnerData.phoneNumber}/store_images/${storeOwnerData.phoneNumber}`);
+      .child(`/store_owners/stores_images/${storeOwnerData.phoneNumber}`);
 
     await assertSucceeds(storageRef.getDownloadURL());
   }); 
 
-  // Testing /store_owners/{storeOwnerId}/store_images/{storeImageId}
+  // Testing /store_owners/stores_images/{storeImageId}
   it('Store Owner : Allow store owners to view store images.', async()=>{
     
     const storage = storeOwnerUser.storage();
       const storageRef = storage.ref(
-        `/store_owners/${storeOwnerData.phoneNumber}/store_images/${storeOwnerData.phoneNumber}`,
+        `/store_owners/stores_images/${storeOwnerData.phoneNumber}`,
       );
 
     await assertSucceeds(storageRef.getDownloadURL());
@@ -328,34 +331,34 @@ describe('Our Alcoholic App',()=>{
   
   
 
-  // Testing /store_owners/{storeOwnerId}/store_images/{storeImageId}
+  // Testing /store_owners/stores_images/{storeImageId}
   it('Offline User : Do not allow not logged in users to delete store images.', async()=>{
 
     const storage = noUser.storage();
       const storageRef = storage.ref(
-        `/store_owners/owner1Id/store_images/store1Id`,
+        `/store_owners/stores_images/store1Id`,
       );
 
     await assertFails(storageRef.delete());
   }); 
 
-  // Testing /store_owners/{storeOwnerId}/store_images/{storeImageId}
+  // Testing /store_owners/stores_images/{storeImageId}
   it('Online User : Do not allow logged in users to delete store images.', async()=>{
 
     const storage = myUser.storage();
       const storageRef = storage.ref(
-        `/store_owners/owner1Id/store_images/store1Id`,
+        `/store_owners/stores_images/store1Id`,
       );
 
     await assertFails(storageRef.delete());
   }); 
 
-  // Testing /store_owners/{storeOwnerId}/store_images/{storeImageId}
+  // Testing /store_owners/stores_images/{storeImageId}
   it('Store Owner : Do not allow store owners to delete store images.', async()=>{
 
     const storage = storeOwnerUser.storage();
       const storageRef = storage.ref(
-        `/store_owners/owner1Id/store_images/store1Id`,
+        `/store_owners/stores_images/store1Id`,
       );
 
     await assertFails(storageRef.delete());
@@ -364,57 +367,37 @@ describe('Our Alcoholic App',()=>{
   //================================Store Images[End]==================================
 
  //================================Store Owner Images[Start]==================================
-  // Testing /store_owners/{storeOwnerId}/store_owner_images/{storeOwnerImageId}
+  // Testing /store_owners/store_owner_images/{storeOwnerImageId}
   it('Offline User : Do not allow not logged in users to upload a store owner image.', async()=>{
     
     await assertFails(
       noUser.storage().ref()
-      .child(`/store_owners/${someId}/store_owners_images/${someId}`).put(file5MB)
+      .child(`/store_owners/store_owners_images/${someId}`).put(file5MB)
       .then()
     );
   }); 
 
-  // Testing /store_owners/{storeOwnerId}/store_owner_images/{storeOwnerImageId}
-  it('Online User : Do not allow logged in users to upload a store owner image if it document id is not the same as the store owner document id[1].', async()=>{
-    
-    await assertFails(
-      myUser.storage().ref()
-      .child(`/store_owners/${someId}/store_owners_images/${someId}`)
-      .put(file5MB).then()
-    );
-  }); 
-
-  // Testing /store_owners/{storeOwnerId}/store_owner_images/{storeOwnerImageId}
+  // Testing /store_owners/store_owner_images/{storeOwnerImageId}
   it('Online User : Do not allow logged in users to upload a store owner image if it document id is not the same as the store owner document id[2].', async()=>{
     
     await assertFails(
       myUser.storage().ref()
-      .child(`/store_owners/${myUserData.phoneNumber}/store_owners_images/${someId}`)
+      .child(`/store_owners/store_owners_images/${someId}`)
       .put(file5MB).then()
     );
   }); 
 
-  // Testing /store_owners/{storeOwnerId}/store_owner_images/{storeOwnerImageId}
-  it('Online User : Do not allow logged in users to upload a store owner image if it document id is not the same as the store owner document id[3].', async()=>{
-    
-    await assertFails(
-      myUser.storage().ref()
-      .child(`/store_owners/${someId}/store_owners_images/${myUserData.phoneNumber}`)
-      .put(file5MB).then()
-    );
-  });
-
-  // Testing /store_owners/{storeOwnerId}/store_owner_images/{storeOwnerImageId}
+  // Testing /store_owners/store_owner_images/{storeOwnerImageId}
   it('Online User : Do not allow logged in users to upload a store owner image if the store does not already exist[4].', async()=>{
     
     await assertFails(
       theirUser.storage().ref()
-      .child(`/store_owners/${theirUserData.phoneNumber}/store_owners_images/${theirUserData.phoneNumber}`)
+      .child(`/store_owners/store_owners_images/${theirUserData.phoneNumber}`)
       .put(file5MB).then()
     );
   });
 
-  // Testing /store_owners/{storeOwnerId}/store_owner_images/{storeOwnerImageId}
+  // Testing /store_owners/store_owner_images/{storeOwnerImageId}
   it('Online User : Do not allow logged in users to upload a store owner image if the store owner already exist[5].', async()=>{
     
     const ownerData = {
@@ -434,12 +417,12 @@ describe('Our Alcoholic App',()=>{
     
     await assertFails(
       myUser.storage().ref()
-      .child(`/store_owners/${myUserData.phoneNumber}/store_owners_images/${myUserData.phoneNumber}`)
+      .child(`/store_owners/store_owners_images/${myUserData.phoneNumber}`)
       .put(file5MB).then()
     );
   });
 
-  // Testing /store_owners/{storeOwnerId}/store_owner_images/{storeOwnerImageId}
+  // Testing /store_owners/store_owner_images/{storeOwnerImageId}
   it('Online User : Do not allow logged in users to upload a store owner image with huge size[6].', async()=>{
     
     const storeData = {
@@ -456,12 +439,12 @@ describe('Our Alcoholic App',()=>{
 
     await assertFails(
       myUser.storage().ref()
-      .child(`/store_owners/${myUserData.phoneNumber}/store_owners_images/${myUserData.phoneNumber}`)
+      .child(`/store_owners/store_owners_images/${myUserData.phoneNumber}`)
       .put(file6MB).then()
     );
   });
 
-  // Testing /store_owners/{storeOwnerId}/store_owner_images/{storeOwnerImageId}
+  // Testing /store_owners/store_owner_images/{storeOwnerImageId}
   it('Online User : Allow logged in users to upload a store owner image if the store already exist[7].', async()=>{
     
     const storeData = {
@@ -478,18 +461,17 @@ describe('Our Alcoholic App',()=>{
 
     await assertSucceeds(
       theirUser.storage().ref()
-      .child(`/store_owners/${theirUserData.phoneNumber}/store_owners_images/${theirUserData.phoneNumber}`)
+      .child(`/store_owners/store_owners_images/${theirUserData.phoneNumber}`)
       .put(file5MB).then()
     );
   });
 
-  // Testing /store_owners/{storeOwnerId}/store_owner_images/{storeOwnerImageId}
+  // Testing /store_owners/store_owner_images/{storeOwnerImageId}
   it('Store Owner : Do not allow store owners to upload store owner images.', async()=>{
     
     await assertFails(
       storeOwnerUser.storage().ref()
-      .child('/store_owners/'+storeOwnerData.phoneNumber+
-      '/store_owners_images/'+storeOwnerData.phoneNumber)
+      .child('/store_owners/store_owners_images/'+storeOwnerData.phoneNumber)
       .put(file5MB).then()
     );
   }); 
@@ -498,33 +480,33 @@ describe('Our Alcoholic App',()=>{
 
 
 
-  // Testing /store_owners/{storeOwnerId}/store_owners_images/{storeOwnerImageId}
+  // Testing /store_owners/store_owners_images/{storeOwnerImageId}
   it('Offline User : Allow not logged in users to view store owner images.', async()=>{
     
     const storage = noUser.storage();
       const storageRef = storage.ref(
-       `/store_owners/${storeOwnerData.phoneNumber}/store_owners_images/${storeOwnerData.phoneNumber}`,
+       `/store_owners/store_owners_images/${storeOwnerData.phoneNumber}`,
       );
 
     await assertSucceeds(storageRef.getDownloadURL());
   }); 
 
-  // Testing /store_owners/{storeOwnerId}/store_owners_images/{storeImageId}
-  it('Online User : Do not allow logged in users to view store owner images.', async()=>{
+  // Testing /store_owners/store_owners_images/{storeImageId}
+  it('Online User : Allow logged in users to view store owner images.', async()=>{
     
     const storage = myUser.storage();
       const storageRef = storage.ref()
-      .child(`/store_owners/${storeOwnerData.phoneNumber}/store_owners_images/${storeOwnerData.phoneNumber}`);
+      .child(`/store_owners/store_owners_images/${storeOwnerData.phoneNumber}`);
 
     await assertSucceeds(storageRef.getDownloadURL());
   }); 
 
-  // Testing /store_owners/{storeOwnerId}/store_owners_images/{storeOwnerImageId}
+  // Testing /store_owners/store_owners_images/{storeOwnerImageId}
   it('Store Owner : Allow store owners to view store owner images.', async()=>{
     
     const storage = storeOwnerUser.storage();
       const storageRef = storage.ref(
-        `/store_owners/${storeOwnerData.phoneNumber}/store_owners_images/${storeOwnerData.phoneNumber}`,
+        `/store_owners/store_owners_images/${storeOwnerData.phoneNumber}`,
       );
 
     await assertSucceeds(storageRef.getDownloadURL());
@@ -533,34 +515,34 @@ describe('Our Alcoholic App',()=>{
 
 
 
-  // Testing /store_owners/{storeOwnerId}/store_images/{storeOwnerImageId}
+  // Testing /store_owners/stores_images/{storeOwnerImageId}
   it('Offline User : Do not allow not logged in users to delete store images.', async()=>{
 
     const storage = noUser.storage();
       const storageRef = storage.ref(
-        `/store_owners/${storeOwnerData.phoneNumber}/store_owners_images/${storeOwnerData.phoneNumber}`,
+        `/store_owners/store_owners_images/${storeOwnerData.phoneNumber}`,
       );
 
     await assertFails(storageRef.delete());
   }); 
 
-  // Testing /store_owners/{storeOwnerId}/store_owners_images/{storeOwnerImageId}
+  // Testing /store_owners/store_owners_images/{storeOwnerImageId}
   it('Online User : Do not allow logged in users to delete store owner images.', async()=>{
 
     const storage = myUser.storage();
       const storageRef = storage.ref(
-        `/store_owners/${storeOwnerData.phoneNumber}/store_owners_images/${storeOwnerData.phoneNumber}`,
+        `/store_owners/store_owners_images/${storeOwnerData.phoneNumber}`,
       );
 
     await assertFails(storageRef.delete());
   }); 
 
-  // Testing /store_owners/{storeOwnerId}/store_owners_images/{storeImageId}
+  // Testing /store_owners/store_owners_images/{storeImageId}
   it('Store Owner : Do not allow store owners to delete store owners images.', async()=>{
 
     const storage = storeOwnerUser.storage();
       const storageRef = storage.ref(
-        `/store_owners/${storeOwnerData.phoneNumber}/store_owners_images/${storeOwnerData.phoneNumber}`,
+        `/store_owners/store_owners_images/${storeOwnerData.phoneNumber}`,
       );
 
     await assertFails(storageRef.delete());
@@ -570,59 +552,37 @@ describe('Our Alcoholic App',()=>{
 
  //================================Store Owner Id Images[Start]==================================
 
-
-
-  // Testing /store_owners/{storeOwnerId}/store_owner_ids/{storeOwnerIdentityDocumentId}
+  // Testing /store_owners/store_owner_ids/{storeOwnerIdentityDocumentId}
   it('Offline User : Do not allow not logged in users to upload a store owner identity document image.', async()=>{
     
     await assertFails(
       noUser.storage().ref()
-      .child(`/store_owners/${someId}/store_owners_ids/${someId}`).put(file5MB)
+      .child(`/store_owners/store_owners_ids/${someId}`).put(file5MB)
       .then()
     );
   }); 
 
-  // Testing /store_owners/{storeOwnerId}/store_owner_ids/{storeOwnerIdentityDocumentId}
+  // Testing /store_owners/store_owner_ids/{storeOwnerIdentityDocumentId}
   it('Online User : Do not allow logged in users to upload a store owner identity document image if it document id is not the same as the store owner document id[1].', async()=>{
     
     await assertFails(
       myUser.storage().ref()
-      .child(`/store_owners/${someId}/store_owners_ids/${someId}`)
+      .child(`/store_owners/store_owners_ids/${theirStoreOwnerData.phoneNumber}`)
       .put(file5MB).then()
     );
   }); 
 
-  // Testing /store_owners/{storeOwnerId}/store_owner_ids/{storeOwnerIdentityDocumentId}
-  it('Online User : Do not allow logged in users to upload a store owner identity document image if it document id is not the same as the store owner document id[2].', async()=>{
-    
-    await assertFails(
-      myUser.storage().ref()
-      .child(`/store_owners/${myUserData.phoneNumber}/store_owners_ids/${someId}`)
-      .put(file5MB).then()
-    );
-  }); 
-
-  // Testing /store_owners/{storeOwnerId}/store_owner_ids/{storeOwnerIdentityDocumentId}
-  it('Online User : Do not allow logged in users to upload a store owner identity document image if it document id is not the same as the store owner document id[3].', async()=>{
-    
-    await assertFails(
-      myUser.storage().ref()
-      .child(`/store_owners/${someId}/store_owners_ids/${myUserData.phoneNumber}`)
-      .put(file5MB).then()
-    );
-  });
-
-  // Testing /store_owners/{storeOwnerId}/store_owner_ids/{storeOwnerIdentityDocumentId}
+  // Testing /store_owners/store_owner_ids/{storeOwnerIdentityDocumentId}
   it('Online User : Do not allow logged in users to upload a store owner identity document image if the store does not already exist[4].', async()=>{
     
     await assertFails(
       theirUser.storage().ref()
-      .child(`/store_owners/${theirUserData.phoneNumber}/store_owners_ids/${theirUserData.phoneNumber}`)
+      .child(`/store_owners/store_owners_ids/${theirUserData.phoneNumber}`)
       .put(file5MB).then()
     );
   });
 
-  // Testing /store_owners/{storeOwnerId}/store_owner_ids/{storeOwnerIdentityDocumentId}
+  // Testing /store_owners/store_owner_ids/{storeOwnerIdentityDocumentId}
   it('Online User : Do not allow logged in users to upload a store owner identity document image if the store owner already exist[5].', async()=>{
     
     const ownerData = {
@@ -630,7 +590,7 @@ describe('Our Alcoholic App',()=>{
       fullname: 'Nomusa',
       surname:'Sukude',
       profileImageURL: `../${myUserData.phoneNumbe}.jpg`,
-      identityDocumentImageURL: `../${myUserData.phoneNumbe}.jpg`,
+      identityDocumentImageURL: `../${myUserData.phoneNumber}.jpg`,
       isAdmin: false,
     };
 
@@ -642,12 +602,12 @@ describe('Our Alcoholic App',()=>{
     
     await assertFails(
       myUser.storage().ref()
-      .child(`/store_owners/${myUserData.phoneNumber}/store_owners_ids/${myUserData.phoneNumber}`)
+      .child(`/store_owners/store_owners_ids/${myUserData.phoneNumber}`)
       .put(file5MB).then()
     );
   });
 
-  // Testing /store_owners/{storeOwnerId}/store_owner_ids/{storeOwnerIdentityDocumentId}
+  // Testing /store_owners/store_owner_ids/{storeOwnerIdentityDocumentId}
   it('Online User : Do not allow logged in users to upload a store owner identity document image with huge size[6].', async()=>{
     
     const storeData = {
@@ -664,12 +624,12 @@ describe('Our Alcoholic App',()=>{
 
     await assertFails(
       myUser.storage().ref()
-      .child(`/store_owners/${myUserData.phoneNumber}/store_owners_ids/${myUserData.phoneNumber}`)
+      .child(`/store_owners/store_owners_ids/${myUserData.phoneNumber}`)
       .put(file6MB).then()
     );
   });
 
-  // Testing /store_owners/{storeOwnerId}/store_owner_ids/{storeOwnerIdentityDocumentId}
+  // Testing /store_owners/store_owner_ids/{storeOwnerIdentityDocumentId}
   it('Online User : Allow logged in users to upload a store owner identity document image if the store already exist[7].', async()=>{
     
     const storeData = {
@@ -686,18 +646,17 @@ describe('Our Alcoholic App',()=>{
 
     await assertSucceeds(
       theirUser.storage().ref()
-      .child(`/store_owners/${theirUserData.phoneNumber}/store_owners_ids/${theirUserData.phoneNumber}`)
+      .child(`/store_owners/store_owners_ids/${theirUserData.phoneNumber}`)
       .put(file5MB).then()
     );
   });
 
-  // Testing /store_owners/{storeOwnerId}/store_owner_ids/{storeOwnerIdentityDocumentId}
+  // Testing /store_owners/store_owner_ids/{storeOwnerIdentityDocumentId}
   it('Store Owner : Do not allow store owners to upload store owner identity document images.', async()=>{
     
     await assertFails(
       storeOwnerUser.storage().ref()
-      .child('/store_owners/'+storeOwnerData.phoneNumber+
-      '/store_owners_ids/'+storeOwnerData.phoneNumber)
+      .child('/store_owners/store_owners_ids/'+storeOwnerData.phoneNumber)
       .put(file5MB).then()
     );
   }); 
@@ -705,55 +664,66 @@ describe('Our Alcoholic App',()=>{
 
 
 
-  // Testing /store_owners/{storeOwnerId}/store_owners_ids/{storeOwnerIdentityDocumentId}
+  // Testing /store_owners/store_owners_ids/{storeOwnerIdentityDocumentId}
   it('Offline User : Do not allow not logged in users to view store owner identity documents.', async()=>{
     
     const storage = noUser.storage();
       const storageRef = storage.ref(
-        `/store_owners/${theirStoreOwnerData.phoneNumber}/store_owners_ids/${theirStoreOwnerData.phoneNumber}`,
+        `/store_owners/store_owners_ids/${theirStoreOwnerData.phoneNumber}`,
       );
 
     await assertFails(storageRef.getDownloadURL());
   }); 
 
-  // Testing /store_owners/{storeOwnerId}/store_owners_ids/{storeOwnerIdentityDocumentId}
+  // Testing /store_owners/store_owners_ids/{storeOwnerIdentityDocumentId}
   it('Online User : Do not allow logged in users to view store owner identity documents.', async()=>{
     
     const storage = myUser.storage();
       const storageRef = storage.ref()
-      .child(`/store_owners/${theirStoreOwnerData.phoneNumber}/store_owners_ids/${theirStoreOwnerData.phoneNumber}`);
+      .child(`/store_owners/store_owners_ids/${theirStoreOwnerData.phoneNumber}`);
 
     await assertFails(storageRef.getDownloadURL());
   }); 
 
-  // Testing /store_owners/{storeOwnerId}/store_owners_ids/{storeOwnerIdentityDocumentId}
+  // Testing /store_owners/store_owners_ids/{storeOwnerIdentityDocumentId}
   it('Store Owner : Do not allow store owners to view store owner identity documents not belogning to them.', async()=>{
     
     const storage = theirStoreOwnerUser.storage();
       const storageRef = storage.ref(
-        `/store_owners/${storeOwnerData.phoneNumber}/store_owners_ids/${storeOwnerData.phoneNumber}`,
+        `/store_owners/store_owners_ids/${storeOwnerData.phoneNumber}`,
       );
 
     await assertFails(storageRef.getDownloadURL());
   });
 
-  // Testing /store_owners/{storeOwnerId}/store_owners_ids/{storeOwnerIdentityDocumentId}
-  it('Store Owner : Do not allow store owners who are admins to view store owner identity documents not belogning to them.', async()=>{
+  // Testing /store_owners/store_owners_ids/{storeOwnerIdentityDocumentId}
+  it('Store Owner : Do not allow store owners to view store owner identity documents not belogning to them.', async()=>{
     
-    const storage = storeOwnerUser.storage();
+    const storage = theirStoreOwnerUser.storage();
       const storageRef = storage.ref(
-        `/store_owners/${theirStoreOwnerData.phoneNumber}/store_owners_ids/${theirStoreOwnerData.phoneNumber}`,
+        `/store_owners/store_owners_ids/${storeOwnerData.phoneNumber}`,
       );
 
-    await assertSucceeds(storageRef.getDownloadURL());
+    await assertFails(storageRef.getDownloadURL());
   });
 
-  // Testing /store_owners/{storeOwnerId}/store_owners_ids/{storeOwnerIdentityDocumentId}
+  // Testing /store_owners/store_owners_ids/{storeOwnerIdentityDocumentId}
   it('Store Owner : Allow store owners to view their store owner identity document.', async()=>{
     
     const storage = theirStoreOwnerUser.storage();
       const storageRef = storage.ref(
-        `/store_owners/${theirStoreOwnerData.phoneNumber}/store_owners_ids/${theirStoreOwnerData.phoneNumber}`,
+        `/store_owners/store_owners_ids/${theirStoreOwnerData.phoneNumber}`,
+      );
+
+    await assertSucceeds(storageRef.getDownloadURL());
+  });
+
+  // Testing /store_owners/store_owners_ids/{storeOwnerIdentityDocumentId}
+  it('Store Owner : Allow store owners who are admins to view any store owner identity document.', async()=>{
+    
+    const storage = storeOwnerUser.storage();
+      const storageRef = storage.ref(
+        `/store_owners/store_owners_ids/${theirStoreOwnerData.phoneNumber}`,
       );
 
     await assertSucceeds(storageRef.getDownloadURL());
@@ -761,34 +731,34 @@ describe('Our Alcoholic App',()=>{
 
 
 
-  // Testing /store_owners/{storeOwnerId}/store_owners_ids/{storeOwnerIdentityDocumentId}
+  // Testing /store_owners/store_owners_ids/{storeOwnerIdentityDocumentId}
   it('Offline User : Do not allow not logged in users to delete store identity document.', async()=>{
 
     const storage = noUser.storage();
       const storageRef = storage.ref(
-        `/store_owners/${theirStoreOwnerData.phoneNumber}/store_owners_ids/${theirStoreOwnerData.phoneNumber}`,
+        `/store_owners/store_owners_ids/${theirStoreOwnerData.phoneNumber}`,
       );
 
     await assertFails(storageRef.delete());
   }); 
 
-  // Testing /store_owners/{storeOwnerId}/store_owners_ids/{storeOwnerIdentityDocumentId}
+  // Testing /store_owners/store_owners_ids/{storeOwnerIdentityDocumentId}
   it('Online User : Do not allow logged in users to delete store owner identity document.', async()=>{
 
     const storage = myUser.storage();
       const storageRef = storage.ref(
-        `/store_owners/${theirStoreOwnerData.phoneNumber}/store_owners_ids/${theirStoreOwnerData.phoneNumber}`,
+        `/store_owners/store_owners_ids/${theirStoreOwnerData.phoneNumber}`,
       );
 
     await assertFails(storageRef.delete());
   }); 
 
-  // Testing /store_owners/{storeOwnerId}/store_owners_ids/{storeOwnerIdentityDocumentId}
+  // Testing /store_owners/store_owners_ids/{storeOwnerIdentityDocumentId}
   it('Store Owner : Do not allow store owners to delete store identity document.', async()=>{
 
     const storage = storeOwnerUser.storage();
       const storageRef = storage.ref(
-       `/store_owners/${theirStoreOwnerData.phoneNumber}/store_owners_ids/${theirStoreOwnerData.phoneNumber}`,
+       `/store_owners/store_owners_ids/${theirStoreOwnerData.phoneNumber}`,
       );
 
     await assertFails(storageRef.delete());
@@ -798,51 +768,37 @@ describe('Our Alcoholic App',()=>{
 
   //================================Alcoholic Images[Start]==================================
 
-  // Testing /alcoholics/{alcoholicId}/profile_images/{profileImageId}
+  // Testing /alcoholics/profile_images/{profileImageId}
   it('Offline User : Do not allow not logged in users to upload a profile image.', async()=>{
     
     await assertFails(
       noUser.storage().ref()
-     .child('/alcoholics/'+someId+
-      '/profile_images/'+ someId)
+     .child('/alcoholics/profile_images/'+ someId)
       .put(file5MB).then()
     );
   }); 
 
-  // Testing /alcoholics/{alcoholicId}/profile_images/{profileImageId}
+  // Testing /alcoholics/profile_images/{profileImageId}
   it('Online User : Do not allow logged in users to upload profile images having a different profile image doc id compared to their uid.', async()=>{
 
     await assertFails(
       myUser.storage().ref()
-      .child('/alcoholics/'+myUserData.phoneNumber+
-      '/profile_images/'+someId)
+      .child('/alcoholics/profile_images/'+someId)
       .put(file5MB).then()
     );
   }); 
 
-  // Testing /alcoholics/{alcoholicId}/profile_images/{profileImageId}
-  it('Online User : Do not allow logged in users to upload profile images having a different doc id compared to their uid.', async()=>{
-
-    await assertFails(
-      myUser.storage().ref()
-      .child('/alcoholics/'+someId+
-      '/profile_images/'+myUserData.phoneNumber)
-      .put(file5MB).then()
-    );
-  }); 
-
-  // Testing /alcoholics/{alcoholicId}/profile_images/{profileImageId}
+  // Testing /alcoholics/profile_images/{profileImageId}
   it('Online User : Do not allow logged in users to upload profile images if they have already registered as alcoholics or store owners.', async()=>{
 
     await assertFails(
       myUser.storage().ref()
-      .child('/alcoholics/'+myUserData.phoneNumber+
-      '/profile_images/'+myUserData.phoneNumber)
+      .child('/alcoholics/profile_images/'+myUserData.phoneNumber)
       .put(file5MB).then()
     );
   }); 
 
-  // Testing /alcoholics/{alcoholicId}/profile_images/{profileImageId}
+  // Testing /alcoholics/profile_images/{profileImageId}
   it('Online User : Allow logged in users to upload profile images if they are not alcoholics already.', async()=>{
 
     await testEnv.withSecurityRulesDisabled(context=>{
@@ -852,20 +808,18 @@ describe('Our Alcoholic App',()=>{
 
     await assertSucceeds(
       myUser.storage().ref()
-      .child('/alcoholics/'+myUserData.phoneNumber+
-      '/profile_images/'+myUserData.phoneNumber)
+      .child('/alcoholics/profile_images/'+myUserData.phoneNumber)
       .put(file5MB).then()
     );
   }); 
 
 
-  // Testing /alcoholics/{alcoholicId}/profile_images/{profileImageId}
+  // Testing /alcoholics/profile_images/{profileImageId}
   it('Store Owner : Do not allow store owners to upload an alcoholic image.', async()=>{
     
     await assertFails(
       storeOwnerUser.storage().ref()
-      .child('/alcoholics/'+storeOwnerData.storeOwnerId+
-      '/profile_images/'+storeOwnerData.storeOwnerId)
+      .child('/alcoholics/profile_images/'+storeOwnerData.storeOwnerId)
       .put(file5MB).then()
     );
   });
@@ -874,34 +828,34 @@ describe('Our Alcoholic App',()=>{
 
 
 
-  // Testing /store_owners/{storeOwnerId}/profile_images/{profileImageId}
+  // Testing /store_owners/profile_images/{profileImageId}
   it('Offline User : Allow not logged in users to view alcoholic profile images.', async()=>{
     
     const storage = noUser.storage();
       const storageRef = storage.ref(
-        '/alcoholics/' + theirUserData.phoneNumber + '/profile_images/' + theirUserData.phoneNumber
+        '/alcoholics/profile_images/' + theirUserData.phoneNumber
       );
 
     await assertSucceeds(storageRef.getDownloadURL());
   }); 
 
-  // Testing /store_owners/{storeOwnerId}/profile_images/{profileImageId}
+  // Testing /store_owners/profile_images/{profileImageId}
   it('Online User : Allow logged in users to view alcoholic profile images.', async()=>{
 
     const storage = myUser.storage();
       const storageRef = storage.ref(
-        '/alcoholics/' + theirUserData.phoneNumber + '/profile_images/' + theirUserData.phoneNumber
+        '/alcoholics/profile_images/' + theirUserData.phoneNumber
       );
 
     await assertSucceeds(storageRef.getDownloadURL());
   }); 
 
-  // Testing /store_owners/{storeOwnerId}/profile_images/{profileImageId}
+  // Testing /store_owners/profile_images/{profileImageId}
   it('Store Owner : Allow store owners to view alcoholic profile images.', async()=>{
 
     const storage = storeOwnerUser.storage();
       const storageRef = storage.ref(
-        '/alcoholics/' + theirUserData.phoneNumber + '/profile_images/' + theirUserData.phoneNumber
+        '/alcoholics/profile_images/' + theirUserData.phoneNumber
       );
 
     await assertSucceeds(storageRef.getDownloadURL());
@@ -911,34 +865,34 @@ describe('Our Alcoholic App',()=>{
 
 
 
-  // Testing /store_owners/{storeOwnerId}/store_owners_ids/{storeOwnerIdentityDocumentId}
+  // Testing /store_owners/store_owners_ids/{storeOwnerIdentityDocumentId}
   it('Offline User : Do not allow not logged in users to delete alcoholics profiles.', async()=>{
 
     const storage = noUser.storage();
       const storageRef = storage.ref(
-        '/alcoholics/' + theirUserData.phoneNumber + '/profile_images/' + theirUserData.phoneNumber,
+        '/alcoholics/profile_images/' + theirUserData.phoneNumber,
       );
 
     await assertFails(storageRef.delete());
   }); 
 
-  // Testing /store_owners/{storeOwnerId}/store_owners_ids/{storeOwnerIdentityDocumentId}
+  // Testing /store_owners/store_owners_ids/{storeOwnerIdentityDocumentId}
   it('Online User : Do not allow logged in users to delete alcoholics profiles.', async()=>{
 
     const storage = myUser.storage();
       const storageRef = storage.ref(
-       '/alcoholics/' + theirUserData.phoneNumber + '/profile_images/' + theirUserData.phoneNumber,
+       '/alcoholics/profile_images/' + theirUserData.phoneNumber,
       );
 
     await assertFails(storageRef.delete());
   }); 
 
-  // Testing /store_owners/{storeOwnerId}/store_owners_ids/{storeOwnerIdentityDocumentId}
+  // Testing /store_owners/store_owners_ids/{storeOwnerIdentityDocumentId}
   it('Store Owner : Do not allow store owners to delete alcoholics profiles.', async()=>{
 
     const storage = storeOwnerUser.storage();
       const storageRef = storage.ref(
-        '/alcoholics/' + theirUserData.phoneNumber + '/profile_images/' + theirUserData.phoneNumber,
+        '/alcoholics/profile_images/' + theirUserData.phoneNumber,
       );
 
     await assertFails(storageRef.delete());

@@ -32,28 +32,28 @@ class WonPriceSummary extends MayBeFake {
   Map<String, dynamic> toJson() {
     Map<String, dynamic> map = super.toJson();
     map.addAll({
-      'Won Price Summary Id': wonPriceSummaryId,
-      'Store FK': storeFK,
-      'Winner Image URL': winnerImageURL,
-      'Winner Username': winnerUsername,
-      'Grand Price Description': grandPriceDescription,
-      'Store Image URL': storeImageURL,
-      'Store Name': storeName,
-      'Store Section': storeSection,
-      'Won Date': wonDate,
+      'wonPriceSummaryId': wonPriceSummaryId,
+      'storeFK': storeFK,
+      'winnerImageURL': winnerImageURL,
+      'winnerUsername': winnerUsername,
+      'grandPriceDescription': grandPriceDescription,
+      'storeImageURL': storeImageURL,
+      'storeName': storeName,
+      'storeSection': storeSection,
+      'wonDate': wonDate,
     });
     return map;
   }
 
   factory WonPriceSummary.fromJson(dynamic json) => WonPriceSummary(
-      wonPriceSummaryId: json['Won Price Summary Id'],
-      storeFK: json['Store FK'],
-      winnerImageURL: json['Winner Image URL'],
-      winnerUsername: json['Winner Username'],
-      grandPriceDescription: json['Grand Price Description'],
-      storeImageURL: json['Store Image URL'],
-      storeName: json['Store Name'],
-      storeSection: json['Store Section'],
-      wonDate: json['Won Date'],
-      isFake: json['Is Fake'] == 'Yes' ? true : false);
+      wonPriceSummaryId: json['wonPriceSummaryId'],
+      storeFK: json['storeFK'],
+      winnerImageURL: json['winnerImageURL'],
+      winnerUsername: json['winnerUsername'],
+      grandPriceDescription: json['grandPriceDescription'],
+      storeImageURL: json['storeImageURL'],
+      storeName: json['storeName'],
+      storeSection: json['storeSection'],
+      wonDate: json['wonDate'],
+      isFake: json['isFake'] == 'Yes' ? true : false);
 }

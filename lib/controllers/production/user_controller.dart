@@ -41,11 +41,12 @@ class UserController extends GetxController {
   }
 
   void saveAlcoholic(File alcoholicProfileImage, String phoneNumber,
-      SectionName sectionName, String uid) async {
+      SectionName sectionName, String uid, String username) async {
     // Step 1 - create user in the firebase authentication. [Performed On The Screen Calling This Method]
     // Step 2 - save user image in firebase storage.
     // Step 3 - save user data in cloud firestore database.
     try {
+      // 'gs://alcoholic-expressions.appspot.com/alcoholics/+27625446322.jpg'
       // 1. Create download URL & save alcoholic image in firebase storage.
       String alcoholicImageURL = await uploadResource(alcoholicProfileImage,
           '/alcoholics/$phoneNumber/profile_images/$phoneNumber');
@@ -53,6 +54,7 @@ class UserController extends GetxController {
       Alcoholic alcoholic = Alcoholic(
           phoneNumber: phoneNumber,
           profileImageURL: alcoholicImageURL,
+          username: username,
           sectionName: sectionName);
 
       // 3. Save alcoholic object

@@ -15,25 +15,12 @@ class GrandPriceStatus extends MayBeFake {
     isFake,
   }) : super(isFake: isFake);
 
-  @override
-  Map<String, dynamic> toJson() {
-    Map<String, dynamic> map = super.toJson();
-
-    map.addAll({
-      'Grand Price Status Id': grandPriceStatusId,
-      'Grand Price Description': grandPriceDescription,
-      'grand Price Image URL': grandPriceImageURL,
-      'No Of Users Who Could Have Won It': noOfUsersWhoCouldHaveWonIt,
-    });
-    return map;
-  }
-
   GrandPriceStatus fromJson(dynamic json) {
     return GrandPriceStatus(
-        grandPriceStatusId: grandPriceStatusId,
-        grandPriceDescription: grandPriceDescription,
-        grandPriceImageURL: grandPriceImageURL,
-        noOfUsersWhoCouldHaveWonIt: noOfUsersWhoCouldHaveWonIt,
-        isFake: json['Is Fake'] == 'Yes' ? true : false);
+        grandPriceStatusId: json['grandPriceStatusId'],
+        grandPriceDescription: json['grandPriceDescription'],
+        grandPriceImageURL: json['grandPriceImageURL'],
+        noOfUsersWhoCouldHaveWonIt: json['noOfUsersWhoCouldHaveWonIt'],
+        isFake: json['isFake'] == 'Yes' ? true : false);
   }
 }

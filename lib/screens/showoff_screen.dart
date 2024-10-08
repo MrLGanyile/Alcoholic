@@ -20,7 +20,7 @@ class _ShowoffScreenState extends State<ShowoffScreen> {
   @override
   Widget build(BuildContext context) => Container(
       decoration: BoxDecoration(
-        color: MyApplication.scaffoldBodyColor,
+        color: MyApplication.logoColor2,
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(30),
           topRight: Radius.circular(30),

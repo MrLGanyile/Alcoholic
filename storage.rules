@@ -24,14 +24,13 @@ service firebase.storage {
     }
 
     // Done Unit Testing, Except For The Update Operation.
-    match /store_owners/{storeOwnerPhoneNumber}/store_images/{storeImageId} {
+    match /store_owners/stores_images/{storeImageId} {
       
       //Only unregistered users can create a store image during registration. 
       allow create: if request.auth != null && 
 
       // Make sure authenticated user's uid is the same as the document id of this image.
-      request.auth.uid==storeOwnerPhoneNumber &&
-      storeOwnerPhoneNumber == storeImageId &&
+      request.auth.uid == storeImageId &&
 
       // Make sure a store whose owner has a phone number which is the same as this document id does not alredy exist.
       firestore.exists(/databases/(default)/documents/stores/
@@ -50,14 +49,13 @@ service firebase.storage {
     }
 
     // Done Unit Testing, Except For The Update Operation.
-    match /store_owners/{storeOwnerPhoneNumber}/store_owners_images/{storeOwnerImageId} {
+    match /store_owners/store_owners_images/{storeOwnerImageId} {
 
       // Only unregistered users can create a store owner image during store registration.
       allow create: if request.auth != null && 
 
       // Make sure authenticated user's uid is the same as the document id of this image.
-      request.auth.uid==storeOwnerPhoneNumber &&
-      storeOwnerPhoneNumber == storeOwnerImageId &&
+      request.auth.uid == storeOwnerImageId &&
 
       // Make sure the store already exist whereas the store owner with the same phone number isn't.
       firestore.exists(/databases/(default)/documents/stores/
@@ -76,15 +74,14 @@ service firebase.storage {
     }
 
     // Done Unit Testing, Except For The Update Operation.
-    match /store_owners/{storeOwnerPhoneNumber}/store_owners_ids/{storeOwnerIdentityDocumentId} {
+    match /store_owners/store_owners_ids/{storeOwnerIdentityDocumentId} {
 
       // Store owners can only create or update their identity documents
       // which also have acceptable size and format.
       allow create: if request.auth != null && 
 
       // Make sure authenticated user's uid is the same as the document id of this image.
-      request.auth.uid==storeOwnerPhoneNumber &&
-      storeOwnerPhoneNumber == storeOwnerIdentityDocumentId &&
+      request.auth.uid == storeOwnerIdentityDocumentId &&
 
       // Make sure the store already exist whereas the store owner with the same phone number isn't.
       firestore.exists(/databases/(default)/documents/stores/
@@ -96,7 +93,7 @@ service firebase.storage {
       //isValidContentType(request.resource);
 
       allow read: if request.auth.uid != null &&
-      (request.auth.uid==storeOwnerPhoneNumber ||
+      (request.auth.uid==storeOwnerIdentityDocumentId ||
       firestore.get(/databases/(default)/documents/store_owners/
       $(request.auth.uid)).data.isAdmin
       );
@@ -105,15 +102,13 @@ service firebase.storage {
       allow update, delete: if false;
     }
 
-    match /store_owners/{storeOwnerPhoneNumber}/store_draw_prices/{storeDrawPricesId} {
+    match /grand_prices_images/{storeDrawPricesId} {
       // Store owners can only create their store image
       // which also have acceptable size and format.
       allow create: if request.auth != null && 
 
       firestore.exists(/databases/(default)/documents/store_owners/
       $(request.auth.uid)) &&
-
-      request.auth.uid == storeOwnerPhoneNumber &&
       
       isValidFileSize(request.resource);// && 
       //isValidContentType(request.resource);
@@ -126,15 +121,14 @@ service firebase.storage {
     
     // Usecase Name - Create Alcoholic Account
     // Done Unit Testing, Except For The Update Operation.
-    match /alcoholics/{alcoholicPhoneNumber}/profile_images/{profileImageId} {
+    match /alcoholics/profile_images/{profileImageId} {
 
       // Store owners can only create or update their images
       // which also have acceptable size and format.
       allow create: if request.auth != null && 
 
       // Make sure authenticated user's uid is the same as the document id of this image.
-      request.auth.uid==alcoholicPhoneNumber &&
-      alcoholicPhoneNumber == profileImageId &&
+      request.auth.uid == profileImageId &&
 
       // Make sure there is no user already using the new user's phone number.
       firestore.exists(/databases/(default)/documents/alcoholics/

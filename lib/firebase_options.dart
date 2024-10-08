@@ -25,8 +25,15 @@ class DefaultFirebaseOptions {
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
+        return macos;
+      case TargetPlatform.windows:
         throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
+          'DefaultFirebaseOptions have not been configured for windows - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
+      case TargetPlatform.linux:
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for linux - '
           'you can reconfigure this by running the FlutterFire CLI again.',
         );
       default:
@@ -37,30 +44,38 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDFpaHn58NWiR90pPWJsEAOPhd-2oiha2Y',
-    appId: '1:1086627119682:web:85235bbffc017f0d76a3db',
-    messagingSenderId: '1086627119682',
-    projectId: 'packages-demo-119b7',
-    authDomain: 'packages-demo-119b7.firebaseapp.com',
-    storageBucket: 'packages-demo-119b7.appspot.com',
+    apiKey: 'AIzaSyA6YytTl6G5v36_NXQEMBlCchkgAh-kpIo',
+    appId: '1:12105173009:web:449a23487dd3426f6c09b0',
+    messagingSenderId: '12105173009',
+    projectId: 'alcoholic-expressions',
+    authDomain: 'alcoholic-expressions.firebaseapp.com',
+    storageBucket: 'alcoholic-expressions.appspot.com',
+    measurementId: 'G-6TD8K84EF4',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBP2BlxWwlm0GI4PZHZRl-NAf6fiG1IhJY',
-    appId: '1:1086627119682:android:3aecab4a98fe263176a3db',
-    messagingSenderId: '1086627119682',
-    projectId: 'packages-demo-119b7',
-    storageBucket: 'packages-demo-119b7.appspot.com',
+    apiKey: 'AIzaSyA0lxUDKf6puOBlnSCZd4agK8LWHu_7hMo',
+    appId: '1:12105173009:android:3cd1f5c41a2d800f6c09b0',
+    messagingSenderId: '12105173009',
+    projectId: 'alcoholic-expressions',
+    storageBucket: 'alcoholic-expressions.appspot.com',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyB4sl8UO3b0YzZG-x_gbim52EpKzl1aVoU',
-    appId: '1:1086627119682:ios:c6b466bf06bbdce976a3db',
-    messagingSenderId: '1086627119682',
-    projectId: 'packages-demo-119b7',
-    storageBucket: 'packages-demo-119b7.appspot.com',
-    androidClientId: '1086627119682-3a0smf3p0pcaf60pl2vd88da7afb5bq1.apps.googleusercontent.com',
-    iosClientId: '1086627119682-cpa5vejcfs9voe3bp0ltf9kdstkc375u.apps.googleusercontent.com',
-    iosBundleId: 'com.example.phoneAuthHandlerDemo',
+    apiKey: 'AIzaSyD2twc4hJoWynn9yJXZQbfOb1bGj7HjlnY',
+    appId: '1:12105173009:ios:5221fc913192d9896c09b0',
+    messagingSenderId: '12105173009',
+    projectId: 'alcoholic-expressions',
+    storageBucket: 'alcoholic-expressions.appspot.com',
+    iosBundleId: 'com.example.alcoholic',
+  );
+
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyD2twc4hJoWynn9yJXZQbfOb1bGj7HjlnY',
+    appId: '1:12105173009:ios:5221fc913192d9896c09b0',
+    messagingSenderId: '12105173009',
+    projectId: 'alcoholic-expressions',
+    storageBucket: 'alcoholic-expressions.appspot.com',
+    iosBundleId: 'com.example.alcoholic',
   );
 }

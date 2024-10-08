@@ -7,11 +7,11 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../models/production/competitions/competition.dart';
-import '../../models/production/competitions/competitor_token.dart';
-import '../../models/production/competitions/competitors_grid.dart';
+import '../../models/production/competitions/group_competitor_token.dart';
+import '../../models/production/competitions/group_competitors_grid.dart';
 import '../../models/production/competitions/grand_price_token.dart';
 import '../../models/production/competitions/grand_prices_grid.dart';
-import '../../models/production/stores/draw_competitor.dart';
+import '../../models/production/stores/draw_group_competitor.dart';
 import '../../models/production/stores/draw_grand_price.dart';
 import '../../models/production/stores/store_owner.dart';
 import '../../models/section_name.dart';
@@ -66,6 +66,7 @@ class StoreController extends GetxController {
       File identityDocumentImage) async {
     try {
       /**#############################Store#############################*/
+      // 'gs://alcoholic-expressions.appspot.com/store_owners/store_images/+27674533323.jpg'
       // 1. Create download URL & save store image in firebase storage.
       String storeImageURL = await uploadResource(
           storeImage, '/store_owners/$phoneNumber/store_images/$phoneNumber');
@@ -92,10 +93,12 @@ class StoreController extends GetxController {
 
       /**#########################Store Owner#########################*/
 
+      // 'gs://alcoholic-expressions.appspot.com/store_owners/store_owners_images/+27674533323.jpg'
       // 1.. Create download URL & save store owner profile image in firebase storage.
       String ownerImageURL = await uploadResource(ownerProfileImage,
           '/store_owners/$phoneNumber/store_owners_images/$phoneNumber');
 
+      // 'gs://alcoholic-expressions.appspot.com/store_owners/store_owners_ids/+27674533323.jpg'
       // 2. Create download URL & save store owner identity image in firebase storage.
       String identityDocumentImageURL = await uploadResource(
           identityDocumentImage,
@@ -150,13 +153,18 @@ class StoreController extends GetxController {
 /*===========================Stores [End]============================= */
 
 /*======================Store Name Info [Start]======================== */
-  Stream<List<StoreNameInfo>> readAllStoreNameInfo() =>
-      FirebaseFirestore.instance
-          .collection('stores_names_info')
-          .snapshots()
-          .map((snapshot) => snapshot.docs
-              .map((doc) => StoreNameInfo.fromJson(doc.data()))
-              .toList());
+  Stream<List<StoreNameInfo>> readAllStoreNameInfo() {
+    Stream<List<StoreNameInfo>> stream = FirebaseFirestore.instance
+        .collection('stores_names_info')
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) {
+              StoreNameInfo info = StoreNameInfo.fromJson(doc.data());
+              debug.log(info.toString());
+              return info;
+            }).toList());
+
+    return stream;
+  }
 
 /*======================Store Name Info [End]======================== */
 
@@ -203,10 +211,10 @@ class StoreController extends GetxController {
         .where('Store Draw Id', isEqualTo: storeDraw.storeDrawId);
 
     // Store all the retrieved draw competitors as a list.
-    Stream<List<DrawCompetitor>> drawCompetitors =
+    Stream<List<DrawGroupCompetitor>> drawCompetitors =
         drawCompetitorsQuery.snapshots().map((snapshot) {
       return snapshot.docs.map((doc) {
-        DrawCompetitor drawCompetitor = DrawCompetitor.fromJson(doc);
+        DrawGroupCompetitor drawCompetitor = DrawGroupCompetitor.fromJson(doc);
         return drawCompetitor;
       }).toList();
     });
@@ -214,182 +222,15 @@ class StoreController extends GetxController {
     // Convert each drawCompetitor into a competitorToken and save it.
     drawCompetitors.forEach((list) async {
       for (var i = 0; i < list.length; i++) {
-        DrawCompetitor drawCompetitor = list[i];
+        DrawGroupCompetitor drawGroupCompetitor = list[i];
         reference = FirebaseFirestore.instance
             .collection(
                 'competitions/${storeDraw.storeDrawId}/competitors_grids/$competitorsGridId/competitors_tokens')
-            .doc(drawCompetitor.competitorId);
+            .doc(drawGroupCompetitor.groupCompetitorId);
 
-        await reference
-            .set(CompetitorToken.fromDrawCompetitor(drawCompetitor).toJson());
-      }
-    });
-  }
-
-  void createCompetitionCloudFunciton() {
-    DateTime justNow = DateTime.now();
-
-    // Retrieve all stores in order to check their store draws.
-    Stream<List<Store>> allStores = FirebaseFirestore.instance
-        .collection('stores')
-        .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => Store.fromJson(doc.data())).toList());
-
-    allStores.forEach((list) {
-      for (var i = 0; i < list.length; i++) {
-        Store store = list[i];
-
-        // Query the store draws that will be playing in the next 5 minutes.
-        Query<Map<String, dynamic>> storeDrawsQuery = FirebaseFirestore.instance
-            .collection('store/${store.storeOwnerPhoneNumber}/store_draws')
-            .where('Draw Date & Time',
-                isLessThanOrEqualTo: justNow.add(const Duration(minutes: 5)),
-                isGreaterThanOrEqualTo: justNow);
-
-        Stream<List<StoreDraw>> storeDraws =
-            storeDrawsQuery.snapshots().map((snapshot) {
-          return snapshot.docs.map((doc) {
-            StoreDraw storeDraw = StoreDraw.fromJson(doc);
-            storeDraw.isOpen = false;
-            // Close Store Draw -> No more updates are allowed on a store draw.
-            updateIsOpen(
-                storeDraw.storeFK, storeDraw.storeDrawId, storeDraw.isOpen);
-            return storeDraw;
-          }).toList();
-        });
-
-        storeDraws.forEach((list) async {
-          for (var i = 0; i < list.length; i++) {
-            StoreDraw storeDraw = list[i];
-            // Used to create the number of iterations when picking grand price to be won and a winner.
-            int randomNoOfRepeataions = 3 + Random().nextInt(3);
-            // Time it would take to pick a grand price to be won.
-            Duration duration = Duration(
-                seconds: storeDraw.numberOfGrandPrices * randomNoOfRepeataions);
-
-            // The order of visiting the grand prices, the last one is the one to be given to the winner.
-            List<int> grandPricesOrder = [];
-
-            // Create the order with which grand prices will be visited.
-            int index;
-            // Make sure all grand prices are visited.
-            for (index = 0; index < storeDraw.numberOfGrandPrices; index++) {
-              grandPricesOrder.add(index);
-            }
-
-            // Create additional way to visit grand prices.
-            for (index = storeDraw.numberOfGrandPrices;
-                index < duration.inSeconds;
-                index++) {
-              grandPricesOrder
-                  .add(Random().nextInt(storeDraw.numberOfGrandPrices));
-            }
-
-            // Suffle the list to make sure the order is random.
-            grandPricesOrder.shuffle();
-
-            DocumentReference grandPricesGridReference = FirebaseFirestore
-                .instance
-                .collection(
-                    'competitions/${storeDraw.storeDrawId}/grand_prices_grids/')
-                .doc();
-
-            GrandPricesGrid grandPricesGrid = GrandPricesGrid(
-                competitionPricesGridId: grandPricesGridReference.id,
-                competitionFK: storeDraw.storeDrawId,
-                numberOfGrandPrices: storeDraw.numberOfGrandPrices,
-                currentlyPointedTokenIndex: 0,
-                grandPricesOrder: grandPricesOrder,
-                duration: duration);
-
-            // Time it would take to pick a winner.
-            duration = Duration(
-                seconds: storeDraw.numberOfGrandPrices * randomNoOfRepeataions);
-            // The order of visiting competitors are kept here.
-            List<int> competitorsOrder = [];
-
-            // Make sure all competitors are visited.
-            for (index = 0;
-                index < storeDraw.numberOfCompetitorsSoFar;
-                index++) {
-              competitorsOrder.add(index);
-            }
-
-            // Create additional way of visiting competitors.
-            for (index = storeDraw.numberOfCompetitorsSoFar;
-                index < duration.inSeconds;
-                index++) {
-              competitorsOrder
-                  .add(Random().nextInt(storeDraw.numberOfCompetitorsSoFar));
-            }
-
-            // Make sure competitors are visited randomly.
-            competitorsOrder.shuffle();
-
-            // Create a duration it takes to pick a winner.
-            if (storeDraw.numberOfCompetitorsSoFar <= 20) {
-              duration =
-                  Duration(seconds: storeDraw.numberOfCompetitorsSoFar * 6);
-            } else if (storeDraw.numberOfCompetitorsSoFar <= 50) {
-              duration =
-                  Duration(seconds: storeDraw.numberOfCompetitorsSoFar * 5);
-            } else if (storeDraw.numberOfCompetitorsSoFar <= 100) {
-              duration =
-                  Duration(seconds: storeDraw.numberOfCompetitorsSoFar + 20);
-            } else if (storeDraw.numberOfCompetitorsSoFar <= 200) {
-              duration =
-                  Duration(seconds: storeDraw.numberOfCompetitorsSoFar + 30);
-            } else if (storeDraw.numberOfCompetitorsSoFar <= 500) {
-              duration =
-                  Duration(seconds: storeDraw.numberOfCompetitorsSoFar + 50);
-            } else if (storeDraw.numberOfCompetitorsSoFar <= 1000) {
-              duration =
-                  Duration(seconds: storeDraw.numberOfCompetitorsSoFar + 30);
-            } else {
-              duration =
-                  Duration(seconds: storeDraw.numberOfCompetitorsSoFar + 60);
-            }
-
-            DocumentReference competitorsGridReference = FirebaseFirestore
-                .instance
-                .collection(
-                    'competitions/${storeDraw.storeDrawId}/competitors_grids/')
-                .doc();
-
-            CompetitorsGrid competitorsGrid = CompetitorsGrid(
-                competitorsGridId: competitorsGridReference.id,
-                competitionFK: storeDraw.storeDrawId,
-                numberOfCompetitors: storeDraw.numberOfCompetitorsSoFar,
-                currentlyPointedTokenIndex: 0,
-                competitorsOrder: competitorsOrder,
-                duration: duration);
-
-            tokensCreationCloudFunction(
-                storeDraw,
-                grandPricesGrid.competitionPricesGridId,
-                competitorsGrid.competitorsGridId);
-
-            DocumentReference competitionReference = FirebaseFirestore.instance
-                .collection('competitions/')
-                .doc(storeDraw.storeDrawId);
-
-            Competition competition = Competition(
-                competitionId: competitionReference.id,
-                storeFK: storeDraw.storeFK,
-                storeImageLocation: storeDraw.storeImageURL,
-                storeName: storeDraw.storeName,
-                storeSectionName: storeDraw.sectionName,
-                grandPricesGrid: grandPricesGrid,
-                competitorsGrid: competitorsGrid,
-                dateTime: storeDraw.drawDateAndTime,
-                joiningFee: storeDraw.joiningFee);
-
-            await grandPricesGridReference.set(grandPricesGrid.toJson());
-            await competitionReference.set(competitorsGrid.toJson());
-            await competitionReference.set(competition.toJson());
-          }
-        });
+        await reference.set(
+            GroupCompetitorToken.fromDrawCompetitor(drawGroupCompetitor)
+                .toJson());
       }
     });
   }
@@ -399,7 +240,7 @@ class StoreController extends GetxController {
       String storeFK,
       DateTime drawDateAndTime,
       double joiningFee,
-      int numberOfCompetitorsSoFar,
+      int numberOfGroupCompetitorsSoFar,
       String storeName,
       String storeImageURL,
       SectionName sectionName,
@@ -430,7 +271,7 @@ class StoreController extends GetxController {
         drawDateAndTime: drawDateAndTime,
         joiningFee: joiningFee,
         numberOfGrandPrices: drawGrandPrices.length,
-        numberOfCompetitorsSoFar: numberOfCompetitorsSoFar,
+        numberOfGroupCompetitorsSoFar: numberOfGroupCompetitorsSoFar,
         storeName: storeName,
         storeImageURL: storeImageURL,
         sectionName: sectionName,
@@ -473,7 +314,7 @@ class StoreController extends GetxController {
   }
 
   void incrementNumberOfCompetitorsSoFar(
-      String storeFK, String storeDrawId, int numberOfCompetitorsSoFar) {
+      String storeFK, String storeDrawId, int numberOfGroupCompetitorsSoFar) {
     StoreDraw storeDraw = findStoreDraw(storeFK, storeDrawId) as StoreDraw;
 
     FirebaseFirestore.instance
@@ -482,7 +323,8 @@ class StoreController extends GetxController {
         .collection('store_draws')
         .doc(storeDrawId)
         .update({
-      'numberOfCompetitorsSoFar': storeDraw.numberOfCompetitorsSoFar + 1
+      'numberOfGroupCompetitorsSoFar':
+          storeDraw.numberOfGroupCompetitorsSoFar + 1
     });
   }
 
@@ -569,7 +411,7 @@ class StoreController extends GetxController {
   /*==========================Draw Competitor [Start]======================= */
   void saveDrawCompetitor(String userId, String imageURL, String storeDrawFK) {}
 
-  Stream<List<DrawCompetitor>> findDrawCompetitors(
+  Stream<List<DrawGroupCompetitor>> findDrawCompetitors(
           String storeId, String storeDrawId) =>
       FirebaseFirestore.instance
           .collection('stores')
@@ -579,10 +421,10 @@ class StoreController extends GetxController {
           .collection('draw_competitors')
           .snapshots()
           .map((snapshot) => snapshot.docs
-              .map((doc) => DrawCompetitor.fromJson(doc.data()))
+              .map((doc) => DrawGroupCompetitor.fromJson(doc.data()))
               .toList());
 
-  Future<DrawCompetitor?> findDrawCompetitor(
+  Future<DrawGroupCompetitor?> findDrawCompetitor(
       String storeFK, String storeDrawId, String drawCompetitorId) async {
     DocumentReference reference = FirebaseFirestore.instance
         .collection('stores')
@@ -595,7 +437,7 @@ class StoreController extends GetxController {
     DocumentSnapshot snapshot = await reference.get();
 
     if (snapshot.exists) {
-      return DrawCompetitor.fromJson(snapshot.data()!);
+      return DrawGroupCompetitor.fromJson(snapshot.data()!);
     }
 
     return null;
@@ -686,7 +528,7 @@ class StoreController extends GetxController {
 
   /*===================Competitors Grid [Start]================= */
 
-  Future<CompetitorsGrid?> findCompetitorsGrid(
+  Future<GroupCompetitorsGrid?> findCompetitorsGrid(
       String competitionFK, String competitorGridId) async {
     DocumentReference reference = FirebaseFirestore.instance
         .collection('competitions')
@@ -697,7 +539,7 @@ class StoreController extends GetxController {
     DocumentSnapshot snapshot = await reference.get();
 
     if (snapshot.exists) {
-      return CompetitorsGrid.fromJson(snapshot.data()!);
+      return GroupCompetitorsGrid.fromJson(snapshot.data()!);
     }
 
     return null;
@@ -706,7 +548,7 @@ class StoreController extends GetxController {
 
   /*===================Competitors Grid Token[Start]================= */
 
-  Stream<List<CompetitorToken>> readCompetitionCompetitorsTokens(
+  Stream<List<GroupCompetitorToken>> readCompetitionCompetitorsTokens(
           String competitionFK, String competitorsGridId) =>
       FirebaseFirestore.instance
           .collection('competitions')
@@ -716,7 +558,7 @@ class StoreController extends GetxController {
           .collection('grand_prices_tokens')
           .snapshots()
           .map((snapshot) => snapshot.docs
-              .map((doc) => CompetitorToken.fromJson(doc.data()))
+              .map((doc) => GroupCompetitorToken.fromJson(doc.data()))
               .toList());
   /*===================Competitors Grid Token[End]================= */
 }

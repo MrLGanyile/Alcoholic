@@ -27,33 +27,33 @@ class StoreOwner extends User {
   Map<String, dynamic> toJson() {
     Map<String, dynamic> map = super.toJson();
     map.addAll({
-      'Full Name': fullname,
-      'Surname': surname,
-      'Identity Document Image URL': identityDocumentImageURL,
-      'Is Admin': isAdmin,
+      'fullname': fullname,
+      'surname': surname,
+      'identityDocumentImageURL': identityDocumentImageURL,
+      'isAdmin': isAdmin,
     });
     return map;
   }
 
   factory StoreOwner.fromJson(dynamic json) => StoreOwner(
-      fullname: json['Full Name'],
-      surname: json['Surname'],
-      phoneNumber: json['Phone Number'],
-      identityDocumentImageURL: json['Identity Document Image URL'],
-      profileImageURL: json['Profile Image URL'],
-      isAdmin: json['Is Admin'],
-      isFake: json['Is Fake'] == 'Yes' ? true : false);
+      fullname: json['fullname'],
+      surname: json['surname'],
+      phoneNumber: json['phoneNumber'],
+      identityDocumentImageURL: json['identityDocumentImageURL'],
+      profileImageURL: json['profileImageURL'],
+      isAdmin: json['isAdmin'],
+      isFake: json['isFake'] == 'Yes' ? true : false);
 
   static StoreOwner fromSnapshot(DocumentSnapshot documentSnapshot) {
     var json = documentSnapshot.data() as Map<String, dynamic>;
 
     return StoreOwner(
-        fullname: json['Full Name'],
-        surname: json['Surname'],
-        phoneNumber: json['Phone Number'],
-        identityDocumentImageURL: json['Identity Document Image URL'],
-        profileImageURL: json['Profile Image URL'],
-        isAdmin: json['Is Admin'],
-        isFake: json['Is Fake'] == 'Yes' ? true : false);
+        fullname: json['fullname'],
+        surname: json['surname'],
+        phoneNumber: json['phoneNumber'],
+        identityDocumentImageURL: json['identityDocumentImageURL'],
+        profileImageURL: json['profileImageURL'],
+        isAdmin: json['isAdmin'],
+        isFake: json['isFake'] == 'Yes' ? true : false);
   }
 }

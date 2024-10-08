@@ -163,7 +163,7 @@ class WaitWidget extends StatelessWidget {
 
     double horizontalGrandPriceSpaceces = 10;
 
-    switch (storeDraw.numberOfCompetitorsSoFar) {
+    switch (storeDraw.numberOfGroupCompetitorsSoFar) {
       case 4:
         grid = Column(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,

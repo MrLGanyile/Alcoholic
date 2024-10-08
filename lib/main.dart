@@ -37,11 +37,10 @@ Future main() async {
     Get.put(UserController());
   });
   // Ideal time to initialize
-  await FirebaseAuth.instance.useAuthEmulator('localhost', 9099);
-
-  await FirebaseStorage.instance.useStorageEmulator('127.0.0.1', 9199);
-  FirebaseFunctions.instance.useFunctionsEmulator('127.0.0.1', 5001);
-  FirebaseFirestore.instance.useFirestoreEmulator('127.0.0.1', 8089);
+  // await FirebaseAuth.instance.useAuthEmulator('localhost', 9099);
+  // await FirebaseStorage.instance.useStorageEmulator('127.0.0.1', 9199);
+  // FirebaseFunctions.instance.useFunctionsEmulator('127.0.0.1', 5001);
+  FirebaseFirestore.instance.useFirestoreEmulator('127.0.0.1', 8080);
   runApp(MyApplication());
 }
 /*
@@ -84,7 +83,6 @@ class MyApplication extends StatefulWidget {
   static Color storesSpecialTextColor = const Color.fromARGB(255, 244, 3, 184);
 
   //static Color headingColor = const Color.fromARGB(169, 106, 3, 124);
-  static Color headingColor = Colors.white;
 
   static Color logoColor1 = Colors.green;
   static Color logoColor2 = Colors.blue;
@@ -145,9 +143,9 @@ class _MyApplicationState extends State<MyApplication> {
         secondaryHeaderColor: const Color.fromARGB(115, 231, 195, 214),
       ),
 
-      //home: StartScreen(sampleForTesting: widget.sampleForTesting),
-      home: AlcoholicRegistrationWidget(),
-      //home: StoreRegistrationWidget(),
+      home: StartScreen(sampleForTesting: widget.sampleForTesting),
+      // home: AlcoholicRegistrationWidget(),
+      // home: StoreRegistrationWidget(),
 
       //home: StoreInfoWidget(store:SampleForTesting.allRegisteredStores[0]),
       //home: OnPlayWidget(store:SampleForTesting.allRegisteredStores[0]),

@@ -35,14 +35,13 @@ class StoreNameInfoWidget extends StatefulWidget {
 
 class StoreNameInfoWidgetState extends State<StoreNameInfoWidget> {
   StoreController storeController = StoreController.storeController;
-  late List<StoreDraw> commingStoreDraws;
+  late Stream<List<StoreDraw>> commingStoreDraws;
 
   @override
   void initState() {
     super.initState();
     commingStoreDraws =
-        storeController.findStoreDraws(widget.storeNameInfo.storeNameInfoId)
-            as List<StoreDraw>;
+        storeController.findStoreDraws(widget.storeNameInfo.storeNameInfoId);
   }
 
   EdgeInsets storeHeadingPadding =
@@ -61,6 +60,7 @@ class StoreNameInfoWidgetState extends State<StoreNameInfoWidget> {
 
   double headingCircleRadius = 5;
   double headingTextFontSize = 15;
+  Color headingTextColor = Colors.black;
 
   //Color textColorOnButtonsAndMore = const Color.fromARGB(255, 245, 4, 193);
   Color textColorOnButtonsAndMore = const Color.fromARGB(169, 26, 2, 31);
@@ -310,7 +310,7 @@ class StoreNameInfoWidgetState extends State<StoreNameInfoWidget> {
                 decoration: BoxDecoration(
                   borderRadius:
                       BorderRadius.all(Radius.circular(headingCircleRadius)),
-                  color: MyApplication.headingColor,
+                  color: MyApplication.logoColor2,
                 ),
                 child: Text(
                   widget.storeNameInfo.storeName,
@@ -318,7 +318,7 @@ class StoreNameInfoWidgetState extends State<StoreNameInfoWidget> {
                   style: TextStyle(
                       fontSize: headingTextFontSize,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: headingTextColor,
                       decoration: TextDecoration.none),
                 ),
               ),
@@ -342,14 +342,14 @@ class StoreNameInfoWidgetState extends State<StoreNameInfoWidget> {
                   decoration: BoxDecoration(
                     borderRadius:
                         BorderRadius.all(Radius.circular(headingCircleRadius)),
-                    color: MyApplication.headingColor,
+                    color: MyApplication.logoColor2,
                   ),
                   child: Text(
                     widget.storeNameInfo.isOpened ? 'Close' : 'Open',
                     style: TextStyle(
                         fontSize: headingTextFontSize,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: headingTextColor,
                         decoration: TextDecoration.none),
                   ),
                 ),
@@ -387,14 +387,14 @@ class StoreNameInfoWidgetState extends State<StoreNameInfoWidget> {
                   decoration: BoxDecoration(
                     borderRadius:
                         BorderRadius.all(Radius.circular(headingCircleRadius)),
-                    color: MyApplication.headingColor,
+                    color: MyApplication.logoColor2,
                   ),
                   child: Text(
                     widget.hasJoined ? 'Leave' : 'Join',
                     style: TextStyle(
                         fontSize: headingTextFontSize,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: headingTextColor,
                         decoration: TextDecoration.none),
                   ),
                 ),
@@ -402,13 +402,13 @@ class StoreNameInfoWidgetState extends State<StoreNameInfoWidget> {
             ),
           ],
         ),
-
+        /*
         widget.storeNameInfo.isOpened
             ? StoreStateWidget(
                 storeId: widget.storeNameInfo.storeNameInfoId,
-                commingStoreDraws: commingStoreDraws,
+                commingStoreDraws: commingStoreDraws.toList(),
               )
-            : const SizedBox.shrink(),
+            : const SizedBox.shrink(), */
       ],
     );
   }

@@ -15,23 +15,10 @@ class RecentWin extends MayBeFake {
     isFake,
   }) : super(isFake: isFake);
 
-  @override
-  Map<String, dynamic> toJson() {
-    Map<String, dynamic> map = super.toJson();
-
-    map.addAll({
-      'Recent Win Id': recentWinId,
-      'Won Price Summary FK': wonPriceSummaryFK,
-      'Winner Image URL': winnerImageURL,
-      'Winner Username': winnerUsername,
-    });
-    return map;
-  }
-
   factory RecentWin.fromJson(Map<String, dynamic> json) => RecentWin(
-      recentWinId: json['Recent Win Id'],
-      wonPriceSummaryFK: json['Won Price Summary FK'],
-      winnerImageURL: json['Winner Image URL'],
-      winnerUsername: json['Winner Username'],
-      isFake: json['Is Fake'] == 'Yes' ? true : false);
+      recentWinId: json['recentWinId'],
+      wonPriceSummaryFK: json['wonPriceSummaryFK'],
+      winnerImageURL: json['winnerImageURL'],
+      winnerUsername: json['winnerUsername'],
+      isFake: json['isFake'] == 'Yes' ? true : false);
 }

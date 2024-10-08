@@ -85,6 +85,70 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Note: Has Model Named {StoreOwner}
+    // Done With Unit Testing.
+    match /store_owners/{storeOwnerPhoneNumber}{
+
+      // Only allow store owner admins to create a store.
+      allow create: if isLoggedInStoreOwner() &&
+
+      // Make sure the authenticated user is an admin.
+      get(/databases/$(database)/documents/store_owners/
+      $(request.auth.uid)).data.isAdmin &&
+
+      // Make sure the store owner's phone number is the same as the doc id.
+      request.resource.data.phoneNumber == storeOwnerPhoneNumber &&
+
+      // Make sure the new store owner to be added isn't an alcoholic.
+      exists(/databases/$(database)/documents/alcoholics/
+      $(storeOwnerPhoneNumber))==false &&
+
+      // Make sure the new store owner to be added isn't added already.
+      exists(/databases/$(database)/documents/store_owners/
+      $(storeOwnerPhoneNumber))==false &&
+    
+      // Make sure the full name is valid.
+      request.resource.data.fullname != null &&
+      request.resource.data.fullname != '' &&
+
+      // Make sure the surname is valid.
+      request.resource.data.surname != null &&
+      request.resource.data.surname != '' &&
+
+      // Make sure the surname is valid.
+      request.resource.data.identityDocumentImageURL != null &&
+      request.resource.data.identityDocumentImageURL != '' &&
+
+      // Make sure the store image location is valid.
+      request.resource.data.profileImageURL != null &&
+      request.resource.data.profileImageURL != '' &&
+
+      // Make sure the store already exist before creating it store owner.
+      exists(/databases/$(database)/documents/stores/
+      $(storeOwnerPhoneNumber));
+
+      // An admin or Any user can only delete his/her store owner account.
+      allow delete: if request.auth != null &&
+      
+      (
+        resource.data.phoneNumber==request.auth.uid ||
+        (
+          isLoggedInStoreOwner() &&
+
+          // Make sure the authenticated user is an admin.
+          get(/databases/$(database)/documents/store_owners/
+          $(request.auth.uid)).data.isAdmin
+        )
+      ); 
+
+      allow list: if isLoggedInStoreOwner();
+
+      allow get; // Anybody can view a store owner. 
+
+      // "update" is made this way because it conflicts with "create".
+      allow update: if false; 
+    }
+
     // Note: Has Model Named {Store}
     // Done With Unit Testing.
     match /stores/{storeOwnerPhoneNumber}{
@@ -122,8 +186,8 @@ service cloud.firestore {
       request.resource.data.sectionName != null &&
       request.resource.data.sectionName in  
       [
+        'Cato Crest-Mayville-Durban-Kwa Zulu Natal-South Africa',
         'Dunbar-Mayville-Durban-Kwa Zulu Natal-South Africa',
-        'Cato Crest-Mayville-Durban-Kwa Zulu Natal-South Africa'
       ];
 
       // Any logged in store owner can read store's info his/her store info.
@@ -188,33 +252,79 @@ service cloud.firestore {
         resource.data.storeFK==storeOwnerPhoneNumber &&
         resource.data.isOpen;
 
-        // Note: Has Model Named {DrawCompetitor}
-        match /draw_competitors/{drawCompetitorId}{
+        // Note: Has Model Named {DrawGroupCompetitor}
+        match /draw_groups_competitors/{drawGroupCompetitorId}{
 
-          // Only a store owner can create a store draw.
-          allow create: if isLoggedInStoreOwner() &&
+          // Only a store members can draw group competitors.
+          allow create: if isLoggedInStoreMember(storeOwnerPhoneNumber) &&
 
-          request.resource.data.competitorId != null &&
-          request.resource.data.competitorId != drawCompetitorId &&
-
-          request.resource.data.imageURL != null &&
-          request.resource.data.imageURL != "" &&
+          request.resource.data.groupCompetitorId != null &&
+          request.resource.data.groupCompetitorId == drawGroupCompetitorId &&
 
           request.resource.data.storeDrawFK != null &&
-          request.resource.data.storeDrawFK != "" &&
-          request.resource.data.storeDrawFK != storeDrawId &&
+          request.resource.data.storeDrawFK == storeDrawId &&
 
-          request.resource.data.username != null &&
-          request.resource.data.username != "" &&
+          request.resource.data.groupImageURL!= null &&
+          request.resource.data.groupImageURL != '' &&
+          
+          request.resource.data.creatorUsername != null &&
+          request.resource.data.creatorUsername != '' &&
+          
+          request.resource.data.creatorId != null &&
+          request.resource.data.creatorId != '' &&
+          request.resource.data.creatorId == request.auth.uid &&
 
-          request.resource.data.competitorNumber!= null &&
-          request.resource.data.competitorNumber>=0 ;
+          request.resource.data.groupName != null &&
+          request.resource.data.groupName.size() >= 3 &&
+
+          request.resource.data.groupNumber != null &&
+          request.resource.data.groupNumber >= 1 &&
+
+          request.resource.data.groupSectionName in  
+          [
+            'Cato Crest-Mayville-Durban-Kwa Zulu Natal-South Africa',
+            'Dunbar-Mayville-Durban-Kwa Zulu Natal-South Africa',
+          ] &&
+
+          request.resource.data.groupSpecificLocation != null &&
+          request.resource.data.groupSpecificLocation != '' &&
+          
+          request.resource.data.groupMembers != null &&
+          request.resource.data.groupMembers.size() == 0;
 
           // Anybody can view store draws.
           allow read;
 
           // Never let anyone update a draw competitor.
-          allow update:if false;
+          allow update:if isLoggedInStoreMember(storeOwnerPhoneNumber) &&
+          request.resource.data.groupCompetitorId ==
+          resource.data.groupCompetitorId &&
+
+          request.resource.data.storeDrawFK ==
+          resource.data.storeDrawFK &&
+
+          request.resource.data.groupImageURL ==
+          resource.data.groupImageURL &&
+          
+          request.resource.data.creatorUsername == 
+          resource.data.creatorUsername &&
+          
+          request.resource.data.creatorId ==
+          resource.data.creatorId &&
+
+          request.resource.data.groupName ==
+          resource.data.groupName &&
+
+          request.resource.data.groupNumber ==
+          resource.data.groupNumber &&
+
+          request.resource.data.groupSectionName ==
+          resource.data.groupSectionName &&
+
+          request.resource.data.groupSpecificLocation ==
+          resource.data.groupSpecificLocation  &&
+          
+          request.auth.uid in request.resource.data.groupMembers;
 
           // Only accept deletion of a competitor from the store owner while the draw is still open.
           allow delete: if 
@@ -228,7 +338,7 @@ service cloud.firestore {
         // Done With Unit Testing.
         match /draw_grand_prices/{drawGrandPrices}{
           
-          // Only a store owner can create a store draw.
+          // Only a store owner can create a store draw grand price.
           allow create: if hasLoggedInAndOwnsThisStore(storeOwnerPhoneNumber) &&
           
           request.resource.data.grandPriceId != null &&
@@ -310,71 +420,6 @@ service cloud.firestore {
       allow create, update, delete: if false; // Called By A Cloud Function Only.
     }
 
-    // Note: Has Model Named {StoreOwner}
-    // Done With Unit Testing.
-    match /store_owners/{storeOwnerPhoneNumber}{
-
-      // Only allow store owner admins to create a store.
-      allow create: if isLoggedInStoreOwner() &&
-
-      // Make sure the authenticated user is an admin.
-      get(/databases/$(database)/documents/store_owners/
-      $(request.auth.uid)).data.isAdmin &&
-
-      // Make sure the store owner's phone number is the same as the doc id.
-      request.resource.data.phoneNumber == storeOwnerPhoneNumber &&
-
-      // Make sure the new store owner to be added isn't an alcoholic.
-      exists(/databases/$(database)/documents/alcoholics/
-      $(storeOwnerPhoneNumber))==false &&
-
-      // Make sure the new store owner to be added isn't added already.
-      exists(/databases/$(database)/documents/store_owners/
-      $(storeOwnerPhoneNumber))==false &&
-    
-      // Make sure the full name is valid.
-      request.resource.data.fullname != null &&
-      request.resource.data.fullname != '' &&
-
-      // Make sure the surname is valid.
-      request.resource.data.surname != null &&
-      request.resource.data.surname != '' &&
-
-      // Make sure the surname is valid.
-      request.resource.data.identityDocumentImageURL != null &&
-      request.resource.data.identityDocumentImageURL != '' &&
-
-      // Make sure the store image location is valid.
-      request.resource.data.profileImageURL != null &&
-      request.resource.data.profileImageURL != '' &&
-
-      // Make sure the store already exist before creating it store owner.
-      exists(/databases/$(database)/documents/stores/
-      $(storeOwnerPhoneNumber));
-
-      // An admin or Any user can only delete his/her store owner account.
-      allow delete: if request.auth != null &&
-      
-      (
-        resource.data.phoneNumber==request.auth.uid ||
-        (
-          isLoggedInStoreOwner() &&
-
-          // Make sure the authenticated user is an admin.
-          get(/databases/$(database)/documents/store_owners/
-          $(request.auth.uid)).data.isAdmin
-        )
-      ); 
-
-      allow list: if isLoggedInStoreOwner();
-
-      allow get; // Anybody can view a store owner. 
-
-      // "update" is made this way because it conflicts with "create".
-      allow update: if false; 
-    }
-
-
     // Note: Has Model Named {RecentWin}
     match /recent_wins/{recentWinId}{
       // Everybody can see recent wins.
@@ -422,15 +467,15 @@ service cloud.firestore {
       
       }
 
-      // Note: Has Model Named {CompetitorsGrid}
-      match /competitors_grids/{competitorGridId}{
+      // Note: Has Model Named {GroupCompetitorsGrid}
+      match /group_competitors_grids/{competitorGridId}{
         
         allow write: if false;
         allow get: if true; 
         allow list: if false;
 
-        // Note: Has Model Named {CompetitorToken}
-        match /competitors_tokens/{competitorTokenId}{
+        // Note: Has Model Named {GroupCompetitorToken}
+        match /group_competitors_tokens/{competitorTokenId}{
           allow write: if false;
           allow get: if false;
           allow list: if true;

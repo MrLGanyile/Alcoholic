@@ -8,11 +8,13 @@ import 'user.dart';
 // Collection Name /alcoholics/alcoholicId
 class Alcoholic extends User {
   SectionName sectionName;
+  String username;
 
   Alcoholic({
     required phoneNumber,
     required profileImageURL,
     required this.sectionName,
+    required this.username,
     isFake,
   }) : super(
           phoneNumber: phoneNumber,
@@ -25,15 +27,17 @@ class Alcoholic extends User {
     Map<String, dynamic> map = super.toJson();
 
     map.addAll({
-      'Section Name': Converter.asString(sectionName),
+      'sectionName': Converter.asString(sectionName),
+      'username': username,
     });
 
     return map;
   }
 
   factory Alcoholic.fromJson(dynamic json) => Alcoholic(
-      profileImageURL: json['Profile Image URL'],
-      phoneNumber: json['Phone Number'],
-      sectionName: Converter.toSectionName(json['Section Name']),
-      isFake: json['Is Fake'] == 'Yes' ? true : false);
+      profileImageURL: json['profileImageURL'],
+      phoneNumber: json['phoneNumber'],
+      sectionName: Converter.toSectionName(json['sectionName']),
+      username: json['username'],
+      isFake: json['isFake'] == 'Yes' ? true : false);
 }

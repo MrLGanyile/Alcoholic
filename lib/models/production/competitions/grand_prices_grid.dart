@@ -31,32 +31,16 @@ class GrandPricesGrid extends MayBeFake {
     isFake,
   }) : super(isFake: isFake);
 
-  @override
-  Map<String, dynamic> toJson() {
-    Map<String, dynamic> map = super.toJson();
-    map.addAll({
-      'Grand Prices Grid Id': competitionPricesGridId,
-      'Competition FK': competitionFK,
-      'Number Of Grand Prices': numberOfGrandPrices,
-      'Currently Pointed Token Index': currentlyPointedTokenIndex,
-      'Grand Prices Order': grandPricesOrder,
-      'Duration': duration.inSeconds,
-      'Has Started': hasStarted,
-      'Has Stopped': hasStopped,
-    });
-    return map;
-  }
-
   factory GrandPricesGrid.fromJson(dynamic json) {
     return GrandPricesGrid(
-        competitionPricesGridId: json['Grand Prices Grid Id'],
-        competitionFK: json['Competition FK'],
-        numberOfGrandPrices: json['Number Of Grand Prices'],
-        currentlyPointedTokenIndex: json['Currently Pointed Token Index'],
-        grandPricesOrder: json['Grand Prices Order'],
-        duration: Duration(seconds: json['Duration']),
-        hasStarted: json['Has Started'],
-        hasStopped: json['Has Stopped'],
-        isFake: json['Is Fake'] == 'Yes' ? true : false);
+        competitionPricesGridId: json['competitionPricesGridId'],
+        competitionFK: json['competitionFK'],
+        numberOfGrandPrices: json['numberOfGrandPrices'],
+        currentlyPointedTokenIndex: json['currentlyPointedTokenIndex'],
+        grandPricesOrder: json['grandPricesOrder'],
+        duration: Duration(seconds: json['duration']),
+        hasStarted: json['hasStarted'],
+        hasStopped: json['hasStopped'],
+        isFake: json['isFake'] == 'Yes' ? true : false);
   }
 }

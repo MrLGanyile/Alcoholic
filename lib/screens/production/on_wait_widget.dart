@@ -106,7 +106,7 @@ class OnWaitWidgetState extends State<OnWaitWidget> {
 
     double horizontalGrandPriceSpaceces = 10;
 
-    switch (widget.storeDraw.numberOfCompetitorsSoFar) {
+    switch (widget.storeDraw.numberOfGroupCompetitorsSoFar) {
       case 4:
         grid = Column(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,

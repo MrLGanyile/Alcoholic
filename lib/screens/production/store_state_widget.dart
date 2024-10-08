@@ -20,6 +20,7 @@ enum StoreState {
 }
 
 class StoreStateWidget extends StatefulWidget {
+  // Step 1
   String storeId;
 
   /* The first element has a store draw whose date 
@@ -45,6 +46,8 @@ class StoreStateWidgetState extends State<StoreStateWidget>
   late DateTime justNow;
 
   StoreController storeController = StoreController.storeController;
+  // Step 2
+  late Stream<List<StoreDraw>> storeDrawsStream;
   late StoreState storeState;
 
   String?
@@ -65,7 +68,11 @@ class StoreStateWidgetState extends State<StoreStateWidget>
   @override
   void initState() {
     super.initState();
+
     justNow = DateTime.now();
+
+    // Step 3
+    storeDrawsStream = storeController.findStoreDraws(widget.storeId);
     setStoreState();
 
     switch (storeState) {

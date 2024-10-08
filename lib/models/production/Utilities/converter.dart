@@ -4,7 +4,7 @@ class Converter {
   // Convert any section string to a section name constant.
   static SectionName toSectionName(String section) {
     switch (section) {
-      case "Dunbar Mayville Durban KZN South Africa":
+      case "Dunbar-Mayville-Durban-Kwa Zulu Natal-South Africa":
         return SectionName.dunbarMayvilleDurbanKwaZuluNatalSouthAfrica;
       default:
         return SectionName.catoCrestMayvilleDurbanKwaZuluNatalSouthAfrica;
@@ -14,9 +14,9 @@ class Converter {
   static String asString(SectionName sectionName) {
     switch (sectionName) {
       case SectionName.dunbarMayvilleDurbanKwaZuluNatalSouthAfrica:
-        return 'Dunbar-Mayville-Durban-KZN-South Africa';
+        return 'Dunbar-Mayville-Durban-Kwa Zulu Natal-South Africa';
       default:
-        return 'Cato Crest-Mayville-Durban-KZN-South Africa';
+        return 'Cato Crest-Mayville-Durban-Kwa Zulu Natal-South Africa';
     }
   }
 

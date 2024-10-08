@@ -3,13 +3,14 @@ import 'package:flutter/material.dart';
 import '../main.dart';
 
 import 'date_picker.dart';
-import 'alcohol_screen.dart';
+import 'groups_screen.dart';
 import 'home_widget.dart';
 import 'showoff_screen.dart';
 
 import '../models/prototype/samples_for_testing.dart';
 
-import 'prototype/stores_widget.dart';
+import 'prototype/stores_widget.dart' as prot_stores_widget;
+import 'production/stores_widget.dart' as prod_stores_widget;
 
 class StartScreen extends StatefulWidget {
   SampleForTesting sampleForTesting;
@@ -26,12 +27,7 @@ class StartScreen extends StatefulWidget {
 class _StartScreenState extends State<StartScreen>
     with SingleTickerProviderStateMixin {
   int currentIndex = 0;
-  List<String> titles = [
-    'Recent Wins',
-    'Alcohol Search',
-    'All Stores',
-    'Videos'
-  ];
+  List<String> titles = ['Recent Wins', 'Groups', 'All Stores', 'Going Ons'];
 
   void updateCurrentIndex(int index) {
     setState(() => currentIndex = index);
@@ -62,14 +58,14 @@ class _StartScreenState extends State<StartScreen>
           leading: IconButton(
             icon: const Icon(Icons.menu),
             iconSize: 30,
-            color: Colors.white,
+            color: MyApplication.logoColor1,
             onPressed: (() {}),
           ),
           title: Text(
             titles[currentIndex],
             style: TextStyle(
               fontSize: 20,
-              color: MyApplication.headingColor,
+              color: MyApplication.logoColor2,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -80,13 +76,13 @@ class _StartScreenState extends State<StartScreen>
             IconButton(
               icon: const Icon(Icons.search),
               iconSize: 30,
-              color: Colors.white,
+              color: MyApplication.logoColor1,
               onPressed: (() {}),
             ),
             IconButton(
               icon: const Icon(Icons.notifications_none),
               iconSize: 30,
-              color: Colors.white,
+              color: MyApplication.logoColor1,
               onPressed: (() {}),
             ),
           ],
@@ -97,30 +93,30 @@ class _StartScreenState extends State<StartScreen>
         ),*/
           bottom: TabBar(
             onTap: updateCurrentIndex,
-            labelColor: Colors.white,
+            labelColor: MyApplication.logoColor1,
             controller: _tabController,
-            indicatorColor: Colors.white,
+            indicatorColor: MyApplication.logoColor2,
             indicatorWeight: 5,
             //dividerHeight: 0,
             indicatorPadding: const EdgeInsets.only(bottom: 8),
-            tabs: const [
+            tabs: [
               Tab(
                 icon: Icon(
                   Icons.home,
-                  color: Colors.white,
+                  color: MyApplication.logoColor1,
                 ),
                 text: 'Home',
               ),
               Tab(
-                icon: Icon(Icons.message, color: Colors.white),
-                text: 'Alcohol',
+                icon: Icon(Icons.group, color: MyApplication.logoColor1),
+                text: 'Groups',
               ),
               Tab(
-                icon: Icon(Icons.local_drink, color: Colors.white),
+                icon: Icon(Icons.local_drink, color: MyApplication.logoColor1),
                 text: 'Stores',
               ),
               Tab(
-                icon: Icon(Icons.video_call, color: Colors.white),
+                icon: Icon(Icons.video_call, color: MyApplication.logoColor1),
                 text: 'Showoffs',
               ),
             ],
@@ -133,11 +129,11 @@ class _StartScreenState extends State<StartScreen>
           child: TabBarView(controller: _tabController, children: [
             HomeWidget(),
             //DatePicker(),
-            AlcoholScreen(),
-            StoresWidget(
+            GroupsScreen(),
+            /*prot_stores_widget.StoresWidget(
               sampleForTesting: widget.sampleForTesting,
-            ),
-            //production.StoresWidget(),
+            ), */
+            prod_stores_widget.StoresWidget(),
             ShowoffScreen(),
           ]),
         ),

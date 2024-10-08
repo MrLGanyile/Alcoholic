@@ -1,5 +1,6 @@
 // Collection Name /stores/storeId/store_draws/storeDrawId
 import 'package:alcoholic/models/production/Utilities/may_be_fake.dart';
+import 'package:alcoholic/models/production/stores/store_draw_state.dart';
 
 import '../../section_name.dart';
 
@@ -8,12 +9,13 @@ class StoreDraw extends MayBeFake {
   String storeFK;
   DateTime drawDateAndTime;
   double joiningFee;
-  int numberOfCompetitorsSoFar;
+  int numberOfGroupCompetitorsSoFar;
   bool isOpen;
   int numberOfGrandPrices;
   String storeName;
   String storeImageURL;
   SectionName sectionName;
+  StoreDrawState storeDrawState; // new
 
   // Contains A Sub Collection Of Draw Grand Prices
   // Contains A Sub Collection Of Draw Competitors
@@ -23,12 +25,13 @@ class StoreDraw extends MayBeFake {
     required this.storeFK,
     required this.drawDateAndTime,
     required this.joiningFee,
-    required this.numberOfCompetitorsSoFar,
+    required this.numberOfGroupCompetitorsSoFar,
     this.isOpen = true,
     required this.numberOfGrandPrices,
     required this.storeName,
     required this.storeImageURL,
     required this.sectionName,
+    this.storeDrawState = StoreDrawState.isComming,
     isFake,
   }) : super(isFake: isFake);
 
@@ -36,42 +39,43 @@ class StoreDraw extends MayBeFake {
   Map<String, dynamic> toJson() {
     Map<String, dynamic> map = super.toJson();
     map.addAll({
-      'Store Draw Id': storeDrawId,
-      'Store FK': storeFK,
-      'Draw Date & Time': {
+      'storeDrawId': storeDrawId,
+      'storeFK': storeFK,
+      'drawDateAndTime': {
         'year': drawDateAndTime.year,
         'month': drawDateAndTime.month,
         'day': drawDateAndTime.day,
         'hour': drawDateAndTime.hour,
         'minute': drawDateAndTime.minute,
       },
-      'Joining Fee': joiningFee,
-      'Number Of Grand Prices': numberOfGrandPrices,
-      'Number of Competitors So Far': numberOfCompetitorsSoFar,
-      'Is Open': isOpen,
-      'Store Name': storeName,
-      'Store Image URL': storeImageURL,
-      'Section Name': sectionName,
+      'joiningFee': joiningFee,
+      'numberOfGrandPrices': numberOfGrandPrices,
+      'numberOfGroupCompetitorsSoFar': numberOfGroupCompetitorsSoFar,
+      'isOpen': isOpen,
+      'storeName': storeName,
+      'storeImageURL': storeImageURL,
+      'sectionName': sectionName,
     });
     return map;
   }
 
   factory StoreDraw.fromJson(dynamic json) => StoreDraw(
-      storeDrawId: json['Store Draw Id'],
-      storeFK: json['Store FK'],
+      storeDrawId: json['storeDrawId'],
+      storeFK: json['storeFK'],
       drawDateAndTime: DateTime(
-        json['Draw Date & Time']['year'],
-        json['Draw Date & Time']['month'],
-        json['Draw Date & Time']['day'],
-        json['Draw Date & Time']['hour'],
-        json['Draw Date & Time']['minute'],
+        json['drawDateAndTime']['year'],
+        json['drawDateAndTime']['month'],
+        json['drawDateAndTime']['day'],
+        json['drawDateAndTime']['hour'],
+        json['drawDateAndTime']['minute'],
       ),
-      joiningFee: json['Joining Fee'],
-      numberOfGrandPrices: json['Number Of Grand Prices'],
-      numberOfCompetitorsSoFar: json['Number of Competitors So Far'],
-      isOpen: json['Is Open'],
-      storeName: json['Store Name'],
-      storeImageURL: json['Store Image URL'],
-      sectionName: json['Section Name'],
-      isFake: json['Is Fake'] == 'Yes' ? true : false);
+      joiningFee: json['joiningFee'],
+      numberOfGrandPrices: json['numberOfGrandPrices'],
+      numberOfGroupCompetitorsSoFar: json['numberOfGroupCompetitorsSoFar'],
+      isOpen: json['isOpen'],
+      storeName: json['storeName'],
+      storeImageURL: json['storeImageURL'],
+      sectionName: json['sectionName'],
+      storeDrawState: json['storeDrawState'],
+      isFake: json['isFake'] == 'Yes' ? true : false);
 }

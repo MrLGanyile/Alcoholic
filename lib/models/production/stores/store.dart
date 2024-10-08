@@ -24,23 +24,23 @@ class Store extends MayBeFake {
   Map<String, dynamic> toJson() {
     Map<String, dynamic> map = super.toJson();
     map.addAll({
-      'Store Name': storeName,
-      'Store Owner Phone Number': storeOwnerPhoneNumber,
-      'Store Image URL': storeImageURL,
-      'Section Name': sectionName,
-      'Last Won Price Summary': lastWonPrice!.toJson(),
+      'storeName': storeName,
+      'storeOwnerPhoneNumber': storeOwnerPhoneNumber,
+      'storeImageURL': storeImageURL,
+      'sectionName': sectionName,
+      'lastWonPrice': lastWonPrice!.toJson(),
     });
     return map;
   }
 
   factory Store.fromJson(dynamic json) {
     return Store(
-        storeOwnerPhoneNumber: json['Store Owner Phone Number'],
-        storeName: json['Store Name'],
-        storeImageURL: json['Store Image URL'],
-        sectionName: json['Section Name'],
-        lastWonPrice: WonPriceSummary.fromJson(json['Last Won PriceSummary']),
-        isFake: json['Is Fake'] == 'Yes' ? true : false);
+        storeOwnerPhoneNumber: json['storeOwnerPhoneNumber'],
+        storeName: json['storeName'],
+        storeImageURL: json['storeImageURL'],
+        sectionName: json['sectionName'],
+        lastWonPrice: WonPriceSummary.fromJson(json['lastWonPrice']),
+        isFake: json['isFake'] == 'Yes' ? true : false);
   }
 
   @override

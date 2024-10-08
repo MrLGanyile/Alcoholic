@@ -14,8 +14,8 @@ abstract class User extends MayBeFake {
   Map<String, dynamic> toJson() {
     Map<String, dynamic> map = super.toJson();
     map.addAll({
-      'Phone Number': phoneNumber,
-      'Profile Image URL': profileImageURL,
+      'phoneNumber': phoneNumber,
+      'profileImageURL': profileImageURL,
     });
     return map;
   }

@@ -53,7 +53,7 @@ class StoresWidgetState extends State<StoresWidget> {
   @override
   Widget build(BuildContext context) => Container(
         decoration: BoxDecoration(
-          color: MyApplication.scaffoldBodyColor,
+          color: MyApplication.scaffoldColor,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(30),
             topRight: Radius.circular(30),
@@ -78,7 +78,7 @@ class StoresWidgetState extends State<StoresWidget> {
                       );
                     }));
               } else if (snapshot.hasError) {
-                Get.snackbar("Error Fetching Data", "${snapshot.error}");
+                debug.log("Error Fetching Data - ${snapshot.error}");
                 return const Center(
                   child: CircularProgressIndicator(),
                 );
