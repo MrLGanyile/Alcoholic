@@ -1,10 +1,14 @@
+import '/controllers/competition_controller.dart';
+
+import '../models/competitions/won_price_summary.dart';
 import 'package:flutter/material.dart';
 
 import '../main.dart';
+import 'won_price_comments_widget.dart';
+import 'won_price_summary_widget.dart';
+import 'dart:developer' as debug;
 
 class HomeWidget extends StatefulWidget {
-  static const id = 'HomeScreen';
-
   HomeWidget({
     super.key,
   });
@@ -14,29 +18,68 @@ class HomeWidget extends StatefulWidget {
 }
 
 class _HomeWidgetState extends State<HomeWidget> {
+  CompetitionController competitionController =
+      CompetitionController.competitionController;
+  late Stream<List<WonPriceSummary>> wonPriceSummariesStream;
   _HomeWidgetState();
 
   @override
   void initState() {
     super.initState();
+    wonPriceSummariesStream = competitionController.readAllWonPriceSummaries();
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: MyApplication.logoColor2,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(30),
-          topRight: Radius.circular(30),
+  Widget build(BuildContext context) => Container(
+        height: 300,
+        decoration: BoxDecoration(
+          color: MyApplication.scaffoldColor,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(30),
+            topRight: Radius.circular(30),
+          ),
         ),
-      ),
-      child: const Center(
-        child: Text('HomeWidget',
-            style: TextStyle(
-              fontSize: 50,
-            )),
-      ),
-    );
-  }
+        child: /* ListView.builder(
+        itemCount: wonPrices.length,
+        itemBuilder: ((context, index) {
+          return Column(
+            children: [
+              WonPriceSummaryWidget(wonPriceSummary: wonPrices[index]),
+              WonPriceCommentsWidget(),
+            ],
+          );
+        }),
+      ), */
+            StreamBuilder<List<WonPriceSummary>>(
+          stream: wonPriceSummariesStream,
+          builder: (context, snapshot) {
+            if (snapshot.hasData) {
+              List<WonPriceSummary> wonPrices = snapshot.data!;
+              return ListView.builder(
+                itemCount: wonPrices.length,
+                itemBuilder: ((context, index) {
+                  return Column(
+                    children: [
+                      WonPriceSummaryWidget(wonPriceSummary: wonPrices[index]),
+                      WonPriceCommentsWidget(
+                        wonPriceSummaryId: wonPrices[index].wonPriceSummaryId,
+                      ),
+                    ],
+                  );
+                }),
+              );
+            } else if (snapshot.hasError) {
+              debug.log(
+                  "Error Fetching Won Price Summaries Data *** - ${snapshot.error}");
+              return const Center(
+                child: CircularProgressIndicator(),
+              );
+            } else {
+              return const Center(
+                child: CircularProgressIndicator(),
+              );
+            }
+          },
+        ),
+      );
 }

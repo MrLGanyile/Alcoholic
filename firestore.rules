@@ -29,6 +29,31 @@ service cloud.firestore {
       $(storeOwnerPhoneNumber)/customers/$(request.auth.uid));
     }
 
+    match /supported_countries/{countryId}{
+      allow write: if false;
+      allow read;
+    }
+
+    match /supported_provinces_or_states/{provinceOrStateId}{
+      allow write: if false;
+      allow read;
+    }
+
+    match /supported_cities/{cityId}{
+      allow write: if false;
+      allow read;
+    }
+
+    match /supported_suburbs_or_townships/{suburbOrTownshipId}{
+      allow write: if false;
+      allow read;
+    }
+
+    match /supported_areas/{areaId}{
+      allow write: if false;
+      allow read;
+    }
+
     // Usecase Name - Create Alcoholic Account
     // Note: Has Model Named {Alcoholic}
     // Done With Unit Testing.
@@ -53,8 +78,47 @@ service cloud.firestore {
       request.resource.data.sectionName != null &&
       request.resource.data.sectionName in 
       [
+        
+        'Cato Crest-Mayville-Durban-Kwa Zulu Natal-South Africa',
+        'Cato Manor-Mayville-Durban-Kwa Zulu Natal-South Africa',
         'Dunbar-Mayville-Durban-Kwa Zulu Natal-South Africa',
-        'Cato Crest-Mayville-Durban-Kwa Zulu Natal-South Africa'
+        'Masxha-Mayville-Durban-Kwa Zulu Natal-South Africa',
+        'Bonela-Mayville-Durban-Kwa Zulu Natal-South Africa',
+        'Sherwood-Mayville-Durban-Kwa Zulu Natal-South Africa',
+        'Richview-Mayville-Durban-Kwa Zulu Natal-South Africa',
+        'Nsimbini-Mayville-Durban-Kwa Zulu Natal-South Africa',
+        'Manor Gardens-Mayville-Durban-Kwa Zulu Natal-South Africa',
+        'Overport-Durban-Kwa Zulu Natal-South Africa',
+        'Sydenham-Durban-Kwa Zulu Natal-South Africa',
+        'Resevior Hills-Durban-Kwa Zulu Natal-South Africa',
+
+        'A Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'AA Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'B Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'BB Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'C Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'CC Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'D Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'E Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'F Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'G Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'H Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'J Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'K Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'L Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'M Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'N Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'P Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'Q Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'R Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'S Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'U Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'V Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'W Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'Y Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'Z Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'Malukazi-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'Philani-Umlazi-Durban-Kwa Zulu Natal-South Africa',
       ];
 
       allow read;
@@ -82,6 +146,127 @@ service cloud.firestore {
       request.resource.data.user3DigitToken==resource.data.user3DigitToken;
 
       // Nobody can delete a relationship
+      allow delete: if false;
+    }
+
+    match /groups/{groupId}{
+
+      allow create: if request.auth != null &&
+
+      // Make sure users do not create more than one group.
+      exists(/databases/$(database)/documents/groups/
+      $(request.auth.uid)) == false && 
+
+      request.resource.data.groupName != null &&
+      request.resource.data.groupName.size() >= 3 &&
+
+      request.resource.data.groupImageURL!= null &&
+      request.resource.data.groupImageURL != '' &&
+
+      request.resource.data.groupSectionName in  
+      [
+        'Cato Crest-Mayville-Durban-Kwa Zulu Natal-South Africa',
+        'Cato Manor-Mayville-Durban-Kwa Zulu Natal-South Africa',
+        'Dunbar-Mayville-Durban-Kwa Zulu Natal-South Africa',
+        'Masxha-Mayville-Durban-Kwa Zulu Natal-South Africa',
+        'Bonela-Mayville-Durban-Kwa Zulu Natal-South Africa',
+        'Sherwood-Mayville-Durban-Kwa Zulu Natal-South Africa',
+        'Richview-Mayville-Durban-Kwa Zulu Natal-South Africa',
+        'Nsimbini-Mayville-Durban-Kwa Zulu Natal-South Africa',
+        'Manor Gardens-Mayville-Durban-Kwa Zulu Natal-South Africa',
+        'Overport-Durban-Kwa Zulu Natal-South Africa',
+        'Sydenham-Durban-Kwa Zulu Natal-South Africa',
+        'Resevior Hills-Durban-Kwa Zulu Natal-South Africa',
+
+        'A Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'AA Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'B Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'BB Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'C Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'CC Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'D Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'E Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'F Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'G Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'H Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'J Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'K Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'L Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'M Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'N Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'P Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'Q Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'R Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'S Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'U Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'V Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'W Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'Y Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'Z Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'Malukazi-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'Philani-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+      ] &&
+
+      request.resource.data.groupSpecificArea != null &&
+      request.resource.data.groupSpecificArea != '' &&
+      
+      request.resource.data.groupCreatorPhoneNumber != null &&
+      request.resource.data.groupCreatorPhoneNumber != '' &&
+      request.resource.data.groupCreatorPhoneNumber == request.auth.uid &&
+
+      request.resource.data.groupCreatorUsername != null &&
+      request.resource.data.groupCreatorUsername != '' &&
+
+      request.resource.data.groupCreatorImageURL != null &&
+      request.resource.data.groupCreatorImageURL != '' &&
+      
+      request.resource.data.groupMembers != null &&
+      request.resource.data.groupMembers.size() == 1;
+
+      // Anybody can view groups.
+      allow read;
+
+      // Let users join or leave groups.
+      allow update:if request.auth != null && 
+      
+      request.resource.data.groupName == 
+      resource.data.groupName &&
+
+      request.resource.data.groupImageURL == 
+      resource.data.groupImageURL &&
+
+      request.resource.data.groupSectionName == 
+      resource.data.groupSectionName &&
+
+      request.resource.data.groupSpecificArea == 
+      resource.data.groupSpecificArea &&
+      
+      request.resource.data.groupCreatorPhoneNumber ==
+      resource.data.groupCreatorPhoneNumber &&
+
+      request.resource.data.groupCreatorUsername ==
+      resource.data.groupCreatorUsername &&
+
+      request.resource.data.groupCreatorImageURL ==
+      resource.data.groupCreatorImageURL &&
+      
+      // A user can only join or leave a group.
+      (
+        
+      (
+        request.resource.data.groupMembers.size() < 12 &&
+        request.resource.data.groupMembers.size() ==
+        resource.data.groupMembers.size() + 1
+        
+      ) ||
+      (
+        request.resource.data.groupMembers.size() <= 12 &&
+        request.resource.data.groupMembers.size() + 1 ==
+        resource.data.groupMembers.size()
+        
+      )
+      );
+
       allow delete: if false;
     }
 
@@ -187,7 +372,45 @@ service cloud.firestore {
       request.resource.data.sectionName in  
       [
         'Cato Crest-Mayville-Durban-Kwa Zulu Natal-South Africa',
+        'Cato Manor-Mayville-Durban-Kwa Zulu Natal-South Africa',
         'Dunbar-Mayville-Durban-Kwa Zulu Natal-South Africa',
+        'Masxha-Mayville-Durban-Kwa Zulu Natal-South Africa',
+        'Bonela-Mayville-Durban-Kwa Zulu Natal-South Africa',
+        'Sherwood-Mayville-Durban-Kwa Zulu Natal-South Africa',
+        'Richview-Mayville-Durban-Kwa Zulu Natal-South Africa',
+        'Nsimbini-Mayville-Durban-Kwa Zulu Natal-South Africa',
+        'Manor Gardens-Mayville-Durban-Kwa Zulu Natal-South Africa',
+        'Overport-Durban-Kwa Zulu Natal-South Africa',
+        'Sydenham-Durban-Kwa Zulu Natal-South Africa',
+        'Resevior Hills-Durban-Kwa Zulu Natal-South Africa',
+
+        'A Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'AA Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'B Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'BB Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'C Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'CC Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'D Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'E Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'F Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'G Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'H Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'J Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'K Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'L Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'M Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'N Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'P Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'Q Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'R Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'S Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'U Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'V Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'W Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'Y Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'Z Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'Malukazi-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+        'Philani-Umlazi-Durban-Kwa Zulu Natal-South Africa',
       ];
 
       // Any logged in store owner can read store's info his/her store info.
@@ -251,88 +474,6 @@ service cloud.firestore {
         hasLoggedInAndOwnsThisStore(storeOwnerPhoneNumber) &&
         resource.data.storeFK==storeOwnerPhoneNumber &&
         resource.data.isOpen;
-
-        // Note: Has Model Named {DrawGroupCompetitor}
-        match /draw_groups_competitors/{drawGroupCompetitorId}{
-
-          // Only a store members can draw group competitors.
-          allow create: if isLoggedInStoreMember(storeOwnerPhoneNumber) &&
-
-          request.resource.data.groupCompetitorId != null &&
-          request.resource.data.groupCompetitorId == drawGroupCompetitorId &&
-
-          request.resource.data.storeDrawFK != null &&
-          request.resource.data.storeDrawFK == storeDrawId &&
-
-          request.resource.data.groupImageURL!= null &&
-          request.resource.data.groupImageURL != '' &&
-          
-          request.resource.data.creatorUsername != null &&
-          request.resource.data.creatorUsername != '' &&
-          
-          request.resource.data.creatorId != null &&
-          request.resource.data.creatorId != '' &&
-          request.resource.data.creatorId == request.auth.uid &&
-
-          request.resource.data.groupName != null &&
-          request.resource.data.groupName.size() >= 3 &&
-
-          request.resource.data.groupNumber != null &&
-          request.resource.data.groupNumber >= 1 &&
-
-          request.resource.data.groupSectionName in  
-          [
-            'Cato Crest-Mayville-Durban-Kwa Zulu Natal-South Africa',
-            'Dunbar-Mayville-Durban-Kwa Zulu Natal-South Africa',
-          ] &&
-
-          request.resource.data.groupSpecificLocation != null &&
-          request.resource.data.groupSpecificLocation != '' &&
-          
-          request.resource.data.groupMembers != null &&
-          request.resource.data.groupMembers.size() == 0;
-
-          // Anybody can view store draws.
-          allow read;
-
-          // Never let anyone update a draw competitor.
-          allow update:if isLoggedInStoreMember(storeOwnerPhoneNumber) &&
-          request.resource.data.groupCompetitorId ==
-          resource.data.groupCompetitorId &&
-
-          request.resource.data.storeDrawFK ==
-          resource.data.storeDrawFK &&
-
-          request.resource.data.groupImageURL ==
-          resource.data.groupImageURL &&
-          
-          request.resource.data.creatorUsername == 
-          resource.data.creatorUsername &&
-          
-          request.resource.data.creatorId ==
-          resource.data.creatorId &&
-
-          request.resource.data.groupName ==
-          resource.data.groupName &&
-
-          request.resource.data.groupNumber ==
-          resource.data.groupNumber &&
-
-          request.resource.data.groupSectionName ==
-          resource.data.groupSectionName &&
-
-          request.resource.data.groupSpecificLocation ==
-          resource.data.groupSpecificLocation  &&
-          
-          request.auth.uid in request.resource.data.groupMembers;
-
-          // Only accept deletion of a competitor from the store owner while the draw is still open.
-          allow delete: if 
-          hasLoggedInAndOwnsThisStore(storeOwnerPhoneNumber) &&
-          resource.data.storeDrawFK==storeDrawId &&
-          get(/databases/$(database)/documents/stores/
-          $(storeOwnerPhoneNumber)/store_draws/storeDrawId).data.isOpen;
-        }
 
         // Note: Has Model Named {DrawGrandPrice}
         // Done With Unit Testing.
@@ -406,10 +547,37 @@ service cloud.firestore {
         // to saving a document of this collection.
         allow create:if false; 
 
+        allow read;
+
         allow update, delete: if request.auth != null && 
         request.auth.uid == resource.data.creatorId;
 
+        
+      }
+    }
+
+    // Note: Has Model Named {WonPriceSummary}
+    // Done With Unit Testing.
+    match /won_prices_summaries/{wonPriceSummaryId}{
+      
+      // create - Invoked Whenever Somebody Wins A Competition.
+      allow write: if false;
+
+      // Everybody can see a won price.
+      allow read;
+
+      match /comments/{wonPriceCommentId}{
+        
+        allow create: if request.auth != null &&
+        get(/databases/$(database)/documents/alcoholics/
+          $(request.auth.uid)).data.sectionName == resource.data.storeSection;
+
         allow read;
+
+        allow update, delete: if request.auth != null &&
+         request.resource.data.creatorFK == resource.data.creatorFK;
+        
+        
       }
     }
 
@@ -420,25 +588,7 @@ service cloud.firestore {
       allow create, update, delete: if false; // Called By A Cloud Function Only.
     }
 
-    // Note: Has Model Named {RecentWin}
-    match /recent_wins/{recentWinId}{
-      // Everybody can see recent wins.
-      // read - Invoked Every Time A User Views The Recent Won Prices Screen (Screen 1).
-      allow read; 
-      // create - Invoked Whenever Somebody Wins A Competition.
-      allow write: if false;
-    }
-
-    // Note: Has Model Named {WonPriceSummary}
-    // Done With Unit Testing.
-    match /won_prices_summaries/{wonPriceSummaryId}{
-      
-      // Everybody can see a won price.
-      allow read; 
-      // create - Invoked Whenever Somebody Wins A Competition.
-      allow write: if false;
-    }
-
+    // All competitions should take the same amount of time to finish.
     // Note: Has Model Named {Competition}
     match /competitions/{competitionId}{
       

@@ -1,20 +1,18 @@
-import 'package:alcoholic/models/production/Utilities/converter.dart';
+import 'package:alcoholic/models/locations/supported_area.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:easy_container/easy_container.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:simple_circular_progress_bar/simple_circular_progress_bar.dart';
 
-import '../controllers/production/authentication_controller.dart';
-import '../controllers/production/user_controller.dart';
+import '../controllers/authentication_controller.dart';
+import '../controllers/location_controller.dart';
+import '../controllers/user_controller.dart';
 import '../main.dart';
-import '../models/section_name.dart';
-import 'page_navigation.dart';
+
 import 'utils/globals.dart';
-import 'utils/helpers.dart';
-import 'verify_phone_number_screen.dart';
 import 'dart:developer' as debug;
 
 class AlcoholicRegistrationWidget extends StatefulWidget {
@@ -35,11 +33,11 @@ class _AlcoholicRegistrationWidgetState
   AuthenticationController authenticationController =
       AuthenticationController.instanceAuth;
   UserController userController = UserController.instance;
+  LocationController locationController = LocationController.locationController;
 
-  final List<String> items = [
-    'Cato Crest Mayville Durban KZN South Africa',
-    'Dunbar Mayville Durban KZN South Africa',
-  ];
+  late Stream<List<SupportedArea>> supportedAreasStream;
+  late List<String> items;
+
   String? selectedValue;
   final _formKey = GlobalKey<FormState>();
 
@@ -50,6 +48,13 @@ class _AlcoholicRegistrationWidgetState
   TextEditingController phoneNumberEditingController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+
+    supportedAreasStream = locationController.readAllSupportedAreas();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
@@ -57,7 +62,7 @@ class _AlcoholicRegistrationWidgetState
           leading: Icon(
             Icons.arrow_back,
             size: 20,
-            color: MyApplication.logoColor1,
+            color: MyApplication.attractiveColor1,
           ),
           title: const Text(
             'Alcoholic Registration',
@@ -68,7 +73,7 @@ class _AlcoholicRegistrationWidgetState
           ),
           centerTitle: true,
           backgroundColor: Colors.black,
-          foregroundColor: MyApplication.logoColor1,
+          foregroundColor: MyApplication.attractiveColor1,
           elevation: 0,
         ),
         backgroundColor: MyApplication.scaffoldColor,
@@ -143,8 +148,32 @@ class _AlcoholicRegistrationWidgetState
               const SizedBox(
                 height: 10,
               ),
-              // Store Section Name
-              pickSectionName(),
+              // Store Area Name
+              StreamBuilder<List<SupportedArea>>(
+                stream: supportedAreasStream,
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    List<String> dbItems = [];
+                    for (int areaIndex = 0;
+                        areaIndex < snapshot.data!.length;
+                        areaIndex++) {
+                      dbItems.add(snapshot.data![areaIndex].toString());
+                    }
+                    items = dbItems;
+                    return pickAreaName();
+                  } else if (snapshot.hasError) {
+                    debug.log(
+                        "Error Fetching Supported Areas Data - ${snapshot.error}");
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  } else {
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+                },
+              ),
               const SizedBox(
                 height: 5,
               ),
@@ -351,7 +380,7 @@ class _AlcoholicRegistrationWidgetState
     );
   }
 
-  Widget pickSectionName() {
+  Widget pickAreaName() {
     dropDowButton = DropdownButton2<String>(
       isExpanded: true,
       hint: Row(

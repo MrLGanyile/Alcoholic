@@ -2,22 +2,15 @@ import 'package:flutter/material.dart';
 
 import '../main.dart';
 
-import 'date_picker.dart';
 import 'groups_screen.dart';
 import 'home_widget.dart';
 import 'showoff_screen.dart';
 
-import '../models/prototype/samples_for_testing.dart';
-
-import 'prototype/stores_widget.dart' as prot_stores_widget;
-import 'production/stores_widget.dart' as prod_stores_widget;
+import 'stores_widget.dart' as prod_stores_widget;
 
 class StartScreen extends StatefulWidget {
-  SampleForTesting sampleForTesting;
-
   StartScreen({
     super.key,
-    required this.sampleForTesting,
   });
 
   @override
@@ -27,7 +20,7 @@ class StartScreen extends StatefulWidget {
 class _StartScreenState extends State<StartScreen>
     with SingleTickerProviderStateMixin {
   int currentIndex = 0;
-  List<String> titles = ['Recent Wins', 'Groups', 'All Stores', 'Going Ons'];
+  List<String> titles = ['Recent Wins', 'All Stores', 'Groups', 'Going Ons'];
 
   void updateCurrentIndex(int index) {
     setState(() => currentIndex = index);
@@ -42,7 +35,7 @@ class _StartScreenState extends State<StartScreen>
       length: 4,
       vsync: this,
     );
-  }
+  } 
 
   @override
   void dispose() {
@@ -58,14 +51,14 @@ class _StartScreenState extends State<StartScreen>
           leading: IconButton(
             icon: const Icon(Icons.menu),
             iconSize: 30,
-            color: MyApplication.logoColor1,
+            color: MyApplication.logoColor2,
             onPressed: (() {}),
           ),
           title: Text(
             titles[currentIndex],
             style: TextStyle(
               fontSize: 20,
-              color: MyApplication.logoColor2,
+              color: MyApplication.attractiveColor1,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -76,13 +69,13 @@ class _StartScreenState extends State<StartScreen>
             IconButton(
               icon: const Icon(Icons.search),
               iconSize: 30,
-              color: MyApplication.logoColor1,
+              color: MyApplication.logoColor2,
               onPressed: (() {}),
             ),
             IconButton(
               icon: const Icon(Icons.notifications_none),
               iconSize: 30,
-              color: MyApplication.logoColor1,
+              color: MyApplication.logoColor2,
               onPressed: (() {}),
             ),
           ],
@@ -103,20 +96,22 @@ class _StartScreenState extends State<StartScreen>
               Tab(
                 icon: Icon(
                   Icons.home,
-                  color: MyApplication.logoColor1,
+                  color: MyApplication.attractiveColor1,
                 ),
                 text: 'Home',
               ),
               Tab(
-                icon: Icon(Icons.group, color: MyApplication.logoColor1),
-                text: 'Groups',
-              ),
-              Tab(
-                icon: Icon(Icons.local_drink, color: MyApplication.logoColor1),
+                icon: Icon(Icons.local_drink,
+                    color: MyApplication.attractiveColor1),
                 text: 'Stores',
               ),
               Tab(
-                icon: Icon(Icons.video_call, color: MyApplication.logoColor1),
+                icon: Icon(Icons.group, color: MyApplication.attractiveColor1),
+                text: 'Groups',
+              ),
+              Tab(
+                icon: Icon(Icons.video_call,
+                    color: MyApplication.attractiveColor1),
                 text: 'Showoffs',
               ),
             ],
@@ -129,11 +124,12 @@ class _StartScreenState extends State<StartScreen>
           child: TabBarView(controller: _tabController, children: [
             HomeWidget(),
             //DatePicker(),
+            prod_stores_widget.StoresWidget(),
             GroupsScreen(),
             /*prot_stores_widget.StoresWidget(
               sampleForTesting: widget.sampleForTesting,
             ), */
-            prod_stores_widget.StoresWidget(),
+
             ShowoffScreen(),
           ]),
         ),

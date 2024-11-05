@@ -1,15 +1,17 @@
-import 'package:alcoholic/controllers/production/store_controller.dart';
+import '../controllers/location_controller.dart';
+import '../controllers/store_controller.dart';
 import 'package:alcoholic/main.dart';
 import 'package:alcoholic/screens/alcoholic_registration_widget.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:easy_container/easy_container.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:simple_circular_progress_bar/simple_circular_progress_bar.dart';
 
+import '../models/locations/supported_area.dart';
 import 'utils/globals.dart';
+import 'dart:developer' as debug;
 
 class StoreRegistrationWidget extends StatefulWidget {
   @override
@@ -17,14 +19,15 @@ class StoreRegistrationWidget extends StatefulWidget {
 }
 
 class _StoreRegistrationWidgetState extends State<StoreRegistrationWidget> {
-  StoreController storeController = Get.find();
+  StoreController storeController = StoreController.storeController;
+  LocationController locationController = LocationController.locationController;
   final _formKey = GlobalKey<FormState>();
 
   late DropdownButton2<String> dropDowButton;
-  final List<String> items = [
-    'Cato Crest Mayville Durban KZN South Africa',
-    'Dunbar Mayville Durban KZN South Africa',
-  ];
+
+  late Stream<List<SupportedArea>> supportedAreasStream;
+  late List<String> items;
+
   String? selectedValue;
   Color textColor = Colors.green;
 
@@ -36,13 +39,20 @@ class _StoreRegistrationWidgetState extends State<StoreRegistrationWidget> {
       TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+
+    supportedAreasStream = locationController.readAllSupportedAreas();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         leading: Icon(
           Icons.arrow_back,
           size: 20,
-          color: MyApplication.logoColor1,
+          color: MyApplication.attractiveColor1,
         ),
         title: const Text(
           'Store Registration',
@@ -53,7 +63,7 @@ class _StoreRegistrationWidgetState extends State<StoreRegistrationWidget> {
         ),
         centerTitle: true,
         backgroundColor: Colors.black,
-        foregroundColor: MyApplication.logoColor1,
+        foregroundColor: MyApplication.attractiveColor1,
         elevation: 0,
       ),
       backgroundColor: MyApplication.scaffoldColor,
@@ -253,8 +263,33 @@ class _StoreRegistrationWidgetState extends State<StoreRegistrationWidget> {
               height: 10,
             ),
 
-            // Store Section Name
-            pickSectionName(),
+            // Store Area Name
+            StreamBuilder<List<SupportedArea>>(
+              stream: supportedAreasStream,
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  List<String> dbItems = [];
+                  for (int areaIndex = 0;
+                      areaIndex < snapshot.data!.length;
+                      areaIndex++) {
+                    dbItems.add(snapshot.data![areaIndex].toString());
+                  }
+                  items = dbItems;
+                  return pickAreaName();
+                } else if (snapshot.hasError) {
+                  debug.log(
+                      "Error Fetching Supported Areas Data - ${snapshot.error}");
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                } else {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                }
+              },
+            ),
+
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
@@ -381,7 +416,7 @@ class _StoreRegistrationWidgetState extends State<StoreRegistrationWidget> {
     );
   }
 
-  Widget pickSectionName() {
+  Widget pickAreaName() {
     dropDowButton = DropdownButton2<String>(
       isExpanded: true,
       hint: Row(

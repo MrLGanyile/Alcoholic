@@ -1,32 +1,23 @@
-import 'package:alcoholic/phone%20auth%20example/screens/verify_phone_number_screen%20copy.dart';
-import 'package:alcoholic/screens/store_registration_widget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import 'controllers/production/store_controller.dart';
-import '/controllers/production/user_controller.dart';
-import '/controllers/production/authentication_controller.dart';
+import 'controllers/competition_controller.dart';
+import 'controllers/location_controller.dart';
+import 'controllers/store_controller.dart';
+import '/controllers/user_controller.dart';
+import '/controllers/authentication_controller.dart';
 
 import 'firebase_options.dart';
-import 'models/production/production_testing.dart';
-import 'models/prototype/old_user.dart';
-import 'models/prototype/samples_for_testing.dart';
-import 'phone auth example/screens/authentication_screen.dart';
-import 'screens/start_screen.dart';
-import 'models/prototype/old_user.dart' as myuser;
-
-import 'controllers/production/store_controller.dart';
-import 'firebase_options.dart';
-import 'models/production/production_testing.dart';
-import 'models/prototype/samples_for_testing.dart';
 import 'screens/alcoholic_registration_widget.dart';
 import 'screens/start_screen.dart';
 
 import 'package:firebase_phone_auth_handler/firebase_phone_auth_handler.dart';
+
+import 'screens/store_registration_widget.dart';
 
 Future main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,27 +26,29 @@ Future main() async {
     Get.put(StoreController());
     Get.put(AuthenticationController());
     Get.put(UserController());
+    Get.put(CompetitionController());
+    Get.put(LocationController());
   });
   // Ideal time to initialize
   // await FirebaseAuth.instance.useAuthEmulator('localhost', 9099);
   // await FirebaseStorage.instance.useStorageEmulator('127.0.0.1', 9199);
   // FirebaseFunctions.instance.useFunctionsEmulator('127.0.0.1', 5001);
-  FirebaseFirestore.instance.useFirestoreEmulator('127.0.0.1', 8080);
+  // FirebaseFirestore.instance.useFirestoreEmulator('127.0.0.1', 8080);
   runApp(MyApplication());
-}
+} // 0767543823
+
 /*
 void main() {
   Get.put(StoreController());
   Get.put(AuthenticationController());
   Get.put(UserController());
   runApp(MyApplication());
-}*/
+} */
 
 class MyApplication extends StatefulWidget {
   MyApplication({super.key});
 
   static String title = 'Alcoholic';
-  final SampleForTesting sampleForTesting = SampleForTesting();
   //final ProductionTesting productionTesting = ProductionTesting();
   // Assets are not added into the pubspec.yaml file.
 
@@ -66,6 +59,9 @@ class MyApplication extends StatefulWidget {
   static Color scaffoldColor = const Color.fromARGB(31, 1, 24, 24);
 
   static Color scaffoldBodyColor = const Color.fromARGB(255, 173, 235, 229);
+
+  static Color attractiveColor1 = Colors.pink;
+  static Color attractiveColor2 = Colors.purple;
 
   static LinearGradient priceslinearGradient = const LinearGradient(
     colors: [Colors.white, Color.fromARGB(255, 44, 35, 46)],
@@ -88,8 +84,6 @@ class MyApplication extends StatefulWidget {
   static Color logoColor2 = Colors.blue;
 
   static String userPhoneNumber = '';
-
-  static myuser.User? currentUser;
 
   static BoxDecoration userThoughtsAreaDecoration = const BoxDecoration(
       color: Color.fromARGB(255, 190, 183, 209),
@@ -143,37 +137,16 @@ class _MyApplicationState extends State<MyApplication> {
         secondaryHeaderColor: const Color.fromARGB(115, 231, 195, 214),
       ),
 
-      home: StartScreen(sampleForTesting: widget.sampleForTesting),
+      home: StartScreen(),
       // home: AlcoholicRegistrationWidget(),
       // home: StoreRegistrationWidget(),
 
       //home: StoreInfoWidget(store:SampleForTesting.allRegisteredStores[0]),
       //home: OnPlayWidget(store:SampleForTesting.allRegisteredStores[0]),
-      //home: OnWaitWidget(store:SampleForTesting.allRegisteredStores[0], sampleForTesting: widget.l  sampleForTesting,),
-      //home: StoresWidget(sampleForTesting: widget.sampleForTesting,),
+      //home: OnWaitWidget(store:SampleForTesting.allRegisteredStores[0], sampleForTesting: widget.sampleForTesting,),
+      // home: StoresWidget(sampleForTesting: widget.sampleForTesting,),
       //home: Center(child:Text('Lwandile')),
       //home: WinnerWidget(wonPrice: SampleForTesting.allRegisteredWonPrices[0],/*SampleForTesting.allRegisteredStores[0].lastWonPrice!*/)
     ));
-
-    /*
-  @override
-  Widget build(BuildContext context) {
-    return GetMaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Alcoholic',
-      theme: ThemeData(
-        primaryColor: const Color.fromARGB(115, 231, 195, 214),
-        secondaryHeaderColor: const Color.fromARGB(115, 231, 195, 214),
-      ),
-
-      //home: AlcoholicRegistrationWidget(),
-      home: StartScreen(sampleForTesting: widget.sampleForTesting),
-      //home: StoreInfoWidget(store:SampleForTesting.allRegisteredStores[0]),
-      //home: OnPlayWidget(store:SampleForTesting.allRegisteredStores[0]),
-      //home: OnWaitWidget(store:SampleForTesting.allRegisteredStores[0], sampleForTesting: widget.l  sampleForTesting,),
-      //home: StoresWidget(sampleForTesting: widget.sampleForTesting,),
-      //home: Center(child:Text('Lwandile')),
-      //home: WinnerWidget(wonPrice: SampleForTesting.allRegisteredWonPrices[0],/*SampleForTesting.allRegisteredStores[0].lastWonPrice!*/)
-    );*/
   }
 }

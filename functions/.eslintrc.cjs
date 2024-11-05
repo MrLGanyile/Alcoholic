@@ -12,6 +12,7 @@ module.exports = {
     "google",
   ],
   rules: {
+    // "max-len": ["off", { "code": 80 }], // Added By Me
     "no-restricted-globals": ["error", "name", "length"],
     "prefer-arrow-callback": "error",
     "quotes": ["error", "double", {"allowTemplateLiterals": true}],
@@ -23,7 +24,9 @@ module.exports = {
       env: {
         mocha: true,
       },
-      rules: {},
+      rules: {
+
+      },
     },
   ],
   globals: {},

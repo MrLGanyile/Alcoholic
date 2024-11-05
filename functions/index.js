@@ -5,7 +5,9 @@
 // The Cloud Functions for Firebase SDK to create Cloud Functions and triggers.
 import {logger} from "firebase-functions";
 
-import {onDocumentCreated} from "firebase-functions/v2/firestore";
+import {onDocumentCreated, onDocumentUpdated}
+  from "firebase-functions/v2/firestore";
+
 import {onRequest} from "firebase-functions/v2/https";
 
 // The Firebase Admin SDK to access Firestore.
@@ -15,11 +17,115 @@ import {getFirestore} from "firebase-admin/firestore";
 import {onSchedule} from "firebase-functions/v2/scheduler";
 
 /* const runtimeOpts = {
-  timeoutSeconds: 360,
-  memory: "1GB",
-};*/
+  timeoutSeconds: 420,
+  //memory: "1GiB",
+}; */
 
 const queriedStoreDraws = [];
+// max 300 seconds for picking a won group.
+// max 60 seconds for picking a won price.
+const tokenPickingHelper = 360;
+
+const supportedCountries = new Map();
+supportedCountries.set(
+    "ZA-South Africa", ["Kwa Zulu Natal"],
+);
+
+const supportedProvincesOrStates = new Map();
+supportedProvincesOrStates.set(
+    "Kwa Zulu Natal", ["Durban", "Pinetown"],
+);
+
+const supportedCities = new Map();
+supportedCities.set(
+    "Durban", ["Mayville", "Umlazi",
+      "Durban Central",
+      "Manor Gardens", "Westville"],
+);
+supportedCities.set(
+    "Pinetown", ["Westmead"],
+
+);
+
+const supportedSuburbOrTownships = new Map();
+supportedSuburbOrTownships.set(
+    "Mayville",
+    [
+      "Cato Crest", "Cato Manor", "Dunbar",
+      "Masxha",
+      "Bonela", "Sherwood", "Richview",
+      "Nsimbini",
+      "Manor Gardens",
+    ],
+);
+supportedSuburbOrTownships.set(
+    "Umlazi",
+    [
+      "A Section", "AA Section", "B Section",
+      "BB Section", "C Section", "CC Section",
+      "D Section", "E Section",
+      "F Section", "G Section", "H Section",
+      "J Section", "K Section", "L Section",
+      "M Section", "N Section",
+      "P Section", "Q Section", "R Section",
+      "S Section", "U Section", "V Section",
+      "W Section", "Y Section",
+      "Z Section", "Malukazi", "Philani", "MUT",
+    ],
+);
+
+supportedSuburbOrTownships.set(
+    "Durban Central", ["DUT"],
+);
+
+supportedSuburbOrTownships.set(
+    "Manor Gardens", ["Haward Campus UKZN"],
+);
+
+supportedSuburbOrTownships.set(
+    "Westville", ["Westville Campus UKZN"],
+);
+
+supportedSuburbOrTownships.set(
+    "Westmead", ["Edgewood Campus UKZN"],
+);
+
+
+const supportedAreas = new Map();
+supportedAreas.set(
+    "Mayville",
+    [
+      "Cato Crest", "Cato Manor", "Dunbar", "Masxha",
+      "Bonela", "Sherwood", "Richview", "Nsimbini",
+      "Manor Gardens",
+    ],
+    "Umlazi",
+    [
+      "A Section", "AA Section", "B Section", "BB Section",
+      "C Section", "CC Section", "D Section", "E Section",
+      "F Section", "G Section", "H Section", "J Section",
+      "K Section", "L Section", "M Section", "N Section",
+      "P Section", "Q Section", "R Section", "S Section",
+      "U Section", "V Section", "W Section", "Y Section",
+      "Z Section", "Malukazi", "Philani", "MUT",
+    ],
+
+    "Durban Central", ["DUT"],
+    "Manor Gardens", ["Haward Campus UKZN"],
+    "Westville", ["Westville Campus UKZN"],
+    "Durban", ["Mayville", "Umlazi", "Durban Central",
+      "Manor Gardens", "Westville"],
+
+
+    "Westmead", ["Edgewood Campus UKZN"],
+    "Pinetown", ["Westmead"],
+
+    "Kwa Zulu Natal", ["Durban", "Pinetown"],
+    "ZA-South Africa", ["Kwa Zulu Natal"],
+
+
+);
+
 
 initializeApp();
 
@@ -50,8 +156,10 @@ export const createRelationship = onDocumentCreated(
       user3DigitToken += choices[Math.floor(Math.random()*choices.length)];
 
       const relationship = {
-        userFK: event.data.data().phoneNumber, user3DigitToken: user3DigitToken,
+        userFK: event.data.data().phoneNumber, 
+        user3DigitToken: user3DigitToken,
         joinedStoresFKs: [],
+        isFake: event.data.data().isFake,
       };
 
       logger.log(`About To Add A Relationship Object With ID 
@@ -93,7 +201,6 @@ export const createStoreNameInfo = onDocumentCreated("/stores/" +
   return await docReference.set(storeNameInfo);
 });
 
-
 // declare the function
 const shuffle = (array) => {
   for (let i = array.length - 1; i > 0; i--) {
@@ -103,13 +210,20 @@ const shuffle = (array) => {
   return array;
 };
 
+// Every wednesday call this function.
+export const createFridaySurtadayAndSundayStoreDraws =
+onRequest(async (req, res)=>{
+
+
+});
+
 /* Do not modify application state inside of your transaction functions.
 Doing so will introduce concurrency issues, because transaction functions
 can run multiple times and are not guaranteed to run on the UI thread.
 Instead, pass information you need out of your transaction functions.
 onSchedule("25 8 * * SUN", async (event) => {*/
-// http://127.0.0.1:5001/alcoholic-expressions/us-central1/fromDrawsToCompetitionsTransaction
-export const fromDrawsToCompetitionsTransaction =
+// http://127.0.0.1:5001/alcoholic-expressions/us-central1/convertStoreDrawsToCompetitions
+export const convertStoreDrawsToCompetitions =
 onRequest(async (req, res)=>{
   try {
     const justNow = new Date(); // Retrieve Current Time.
@@ -134,517 +248,1318 @@ onRequest(async (req, res)=>{
             "<=", justNow.getMinutes() + 5,
         )
         .where("drawDateAndTime.minute",
-            ">=", justNow.getMinutes()-5,
+            ">=", justNow.getMinutes(),
         )
         .onSnapshot(async (storeDrawsSnapshot)=>{
           if (storeDrawsSnapshot.size) {
-            storeDrawsSnapshot.forEach(async (storeDrawDoc)=>{
-              storeDrawDoc.ref.update({isOpen: false,
-                isRemainingTimeVisible: true});
-              const storeDrawId = storeDrawDoc.data()["storeDrawId"];
+            storeDrawsSnapshot.forEach(async (storeDrawDoc)=>{ 
 
-              const storeDraw = {
-                isFake: storeDrawDoc.data()["isFake"],
-                storeDrawId: storeDrawDoc.data()["storeDrawId"],
-                storeFK: storeDrawDoc.data()["storeFK"],
-                drawDateAndTime:
-                storeDrawDoc.data()["drawDateAndTime"],
-                joiningFee: storeDrawDoc.data()["joiningFee"],
-                numberOfGrandPrices:
-                storeDrawDoc.data()["numberOfGrandPrices"],
-                numberOfGroupCompetitorsSoFar:
-                storeDrawDoc.data()["numberOfGroupCompetitorsSoFar"],
-                isOpen: storeDrawDoc.data()["isOpen"],
-                storeName: storeDrawDoc.data()["storeName"],
-                storeImageURL:
-                storeDrawDoc.data()["storeImageURL"],
-                sectionName:
-                storeDrawDoc.data()["sectionName"],
-                remainingTime:
-                storeDrawDoc.data()["remainingTime"],
-                isRemainingTimeVisible:
-                storeDrawDoc.data()["isRemainingTimeVisible"],
-              };
-
-              queriedStoreDraws.push(storeDraw);
-
-              let reference = getFirestore()
-                  .collection("competitions")
-                  .doc(storeDraw.storeDrawId);
-
-              const competition = {
-                competitionId: reference.id,
-                storeFK: storeDraw.storeFK,
-                storeImageLocation: storeDraw.storeImageURL,
-                storeName: storeDraw.storeName,
-                storeSectionName: storeDraw.sectionName,
-                isLive: true,
-                dateTime: storeDraw.drawDateAndTime,
-                joiningFee: storeDraw.joiningFee,
-                isOver: false,
-              };
-
-              await reference.set(competition);
-
-              /* Convert each drawGrandPrice into a
-              grandPriceToken and save it.*/
-              reference = getFirestore()
-                  .collection("competitions")
-                  .doc(storeDrawId)
-                  .collection("grand_prices_grids")
-                  .doc();
-
-              const grandPriceGridId = reference.id;
-
-              // Step 4
-              /* Used to create the number of iterations
-              when picking grand price to be won and a winner.*/
-              const randomNoOfRepeataions = 3 +
-              Math.floor(Math.random()*3);
-              /* Time it would take to pick a grand price
-              to be won.*/
-              let durationInSeconds = storeDraw.numberOfGrandPrices*
-              randomNoOfRepeataions;
-              /* The order of visiting the grand prices,
-              the last one is the one to be given to the
-              winner.*/
-              let grandPricesOrder = [];
-              /* Create the order with which grand prices
-              will be visited.*/
-              let index;
-              // Make sure all grand prices are visited.
-              for (index = 0; index < storeDraw.numberOfGrandPrices;
-                index++) {
-                grandPricesOrder.push(index);
-              }
-              // Create additional way to visit grand prices.
-              for (index = storeDraw.numberOfGrandPrices;
-                index < durationInSeconds; index++) {
-                grandPricesOrder
-                    .push(Math.floor(Math.random()*
-                      storeDraw.numberOfGrandPrices),
-                    );
-              }
-
-              // Suffle the list to make sure the order is random.
-              grandPricesOrder = shuffle(grandPricesOrder);
-
-              const grandPricesGrid = {
-                grandPricesGridId: reference.id,
-                competitionFK: competition.competitionId,
-                numberOfGrandPrices: storeDraw.numberOfGrandPrices,
-                currentlyPointedTokenIndex: 0,
-                grandPricesOrder: grandPricesOrder,
-                duration: durationInSeconds,
-                hasStarted: false,
-                hasStopped: false,
-              };
-
-              reference.set(grandPricesGrid);
-
-              getFirestore()
-                  .collection("stores")
-                  .doc(storeDraw.storeFK)
-                  .collection("store_draws")
-                  .doc(storeDrawId)
-                  .collection("draw_grand_prices")
-                  .onSnapshot(async (drawGrandPricesSnapshot)=>{
-                    if (drawGrandPricesSnapshot.size>0) {
-                      drawGrandPricesSnapshot.forEach(
-                          async (drawGrandPrice)=>{
-                            const tokenReference =
-                            reference
-                                .collection("grand_prices_tokens")
-                                .doc();
-
-                            const grandPriceToken ={
-                              grandPriceTokenId:
-                              tokenReference.id,
-                              grandPriceGridFK:
-                              grandPriceGridId,
-                              tokenIndex:
-                              drawGrandPrice.data().grandPriceIndex,
-                              isPointed:
-                              drawGrandPrice.data().grandPriceIndex==0,
-                              imageURL:
-                              drawGrandPrice.data().imageURL,
-                              description:
-                              drawGrandPrice.data().description,
-                            };
-                            await tokenReference.set(grandPriceToken);
-                          });
-
-                      reference = getFirestore()
-                          .collection("competitions")
-                          .doc(storeDraw.storeDrawId)
-                          .collection("group_competitors_grids")
-                          .doc();
-
-                      const groupCompetitorsGridId = reference.id;
-
-                      // Time it would take to pick a winner.
-                      durationInSeconds =
-                      storeDraw.numberOfGroupCompetitorsSoFar *
-                      randomNoOfRepeataions;
-                      /* The order of visiting competitors
-                      are kept here.*/
-                      let competitorsOrder = [];
-                      // Make sure all competitors are visited.
-                      for (index = 0; index <
-                        storeDraw.numberOfGroupCompetitorsSoFar;
-                        index++) {
-                        competitorsOrder.push(index);
-                      }
-                      // Create additional way of visiting competitors.
-                      for (index =
-                        storeDraw.numberOfGroupCompetitorsSoFar;
-                        index < durationInSeconds;
-                        index++) {
-                        competitorsOrder.push(Math.floor(Math.random()*
-                        storeDraw.numberOfGroupCompetitorsSoFar));
-                      }
-                      // Make sure competitors are visited randomly.
-                      competitorsOrder = shuffle(competitorsOrder);
-                      // Create a duration it takes to pick a winner.
-                      if (
-                        storeDraw.numberOfGroupCompetitorsSoFar <= 20) {
-                        durationInSeconds =
-                        storeDraw.numberOfGroupCompetitorsSoFar * 6;
-                      } else if (
-                        storeDraw.numberOfGroupCompetitorsSoFar <=
-                        50) {
-                        durationInSeconds =
-                        storeDraw.numberOfGroupCompetitorsSoFar * 5;
-                      } else if (
-                        storeDraw.numberOfGroupCompetitorsSoFar <=
-                        100) {
-                        durationInSeconds =
-                        storeDraw.numberOfGroupCompetitorsSoFar + 20;
-                      } else if (
-                        storeDraw.numberOfGroupCompetitorsSoFar <=
-                        200) {
-                        durationInSeconds =
-                        storeDraw.numberOfGroupCompetitorsSoFar +
-                        30;
-                      } else if (
-                        storeDraw.numberOfGroupCompetitorsSoFar <=
-                        500) {
-                        durationInSeconds =
-                        storeDraw.numberOfGroupCompetitorsSoFar + 50;
-                      } else if (
-                        storeDraw.numberOfGroupCompetitorsSoFar <=
-                        1000) {
-                        durationInSeconds =
-                        storeDraw.numberOfGroupCompetitorsSoFar + 30;
-                      } else {
-                        durationInSeconds =
-                        storeDraw.numberOfGroupCompetitorsSoFar + 60;
-                      }
-
-                      const groupCompetitorsGrid = {
-                        competitorsGridId: groupCompetitorsGridId,
-                        competitionFK: storeDraw.storeDrawId,
-                        numberOfGroupCompetitors:
-                        storeDraw.numberOfGroupCompetitorsSoFar,
-                        currentlyPointedTokenIndex: 0,
-                        competitorsOrder: competitorsOrder,
-                        duration: durationInSeconds,
-                        hasStarted: false,
-                        hasStopped: false,
+              const sectionName = storeDrawDoc.data()["sectionName"];
+              /* Only initiate the conversion step if there are
+                 groups belonging in a section which is the same
+                 as the store draw's.*/
+                 getFirestore().collection("groups")
+                 //.where("groupSectionName", "==", sectionName)
+                 .onSnapshot(async (groupsSnapshot)=>{
+                    if(groupsSnapshot.size>0){
+                      storeDrawDoc.ref.update({isOpen: false,
+                        isRemainingTimeVisible: true});
+                      const storeDrawId = storeDrawDoc.data()["storeDrawId"];
+        
+                      const storeDraw = {
+                        isFake: storeDrawDoc.data()["isFake"],
+                        storeDrawId: storeDrawDoc.data()["storeDrawId"],
+                        storeFK: storeDrawDoc.data()["storeFK"],
+                        drawDateAndTime:
+                        storeDrawDoc.data()["drawDateAndTime"],
+                        joiningFee: storeDrawDoc.data()["joiningFee"],
+                        numberOfGrandPrices:
+                        storeDrawDoc.data()["numberOfGrandPrices"],
+                        numberOfGroupCompetitorsSoFar:
+                        storeDrawDoc.data()["numberOfGroupCompetitorsSoFar"],
+                        isOpen: storeDrawDoc.data()["isOpen"],
+                        storeName: storeDrawDoc.data()["storeName"],
+                        storeImageURL:
+                        storeDrawDoc.data()["storeImageURL"],
+                        sectionName:sectionName,
+                        //remainingTime:
+                        //storeDrawDoc.data()["remainingTime"],
+                        //isRemainingTimeVisible:
+                        //storeDrawDoc.data()["isRemainingTimeVisible"],
                       };
-
-                      reference.set(groupCompetitorsGrid);
-
-                      getFirestore()
-                          .collection("stores")
-                          .doc(storeDraw.storeFK)
-                          .collection("store_draws")
-                          .doc(storeDrawId)
-                          .collection("draw_groups_competitors")
-                          .onSnapshot(
-                              async (drawGroupCompetitorsSnapshot)=>{
-                                if (drawGroupCompetitorsSnapshot.size>
-                                  0) {
-                                  drawGroupCompetitorsSnapshot.forEach(
-                                      async (drawGroupCompetitorDoc)=>{
-                                        const tokenDocReference =
-                                  reference
-                                      .collection(
-                                          "group_competitors_tokens")
-                                      .doc();
-                                        const groupCompetitorToken = {
-                                          groupCompetitorTokenId:
-                                          tokenDocReference
-                                              .id,
-                                          groupCompetitorsGridFK:
-                                          groupCompetitorsGridId,
-                                          tokenIndex:
-                                          drawGroupCompetitorDoc
-                                              .data()["groupNumber"],
-                                          isPointed:
-                                          drawGroupCompetitorDoc
-                                              .data()["groupNumber"]==0,
-                                          groupCompetitorImageURL:
-                                          drawGroupCompetitorDoc
-                                              .data()["groupImageURL"],
-                                          groupName:
-                                          drawGroupCompetitorDoc
-                                              .data()["groupName"],
-                                          creatorUsername:
-                                          drawGroupCompetitorDoc
-                                              .data()["creatorUsername"],
-                                          creatorId:
-                                          drawGroupCompetitorDoc
-                                              .data()["creatorId"],
-                                          groupSectionName:
-                                          drawGroupCompetitorDoc
-                                              .data()["groupSectionName"],
-                                          groupSpecificLocation:
-                                          drawGroupCompetitorDoc
-                                              .data()["groupSpecificLocation"],
-                                        };
-
-                                        tokenDocReference
-                                            .set(groupCompetitorToken);
-                                      });
-                                }
-                              });
+        
+                      queriedStoreDraws.push(storeDraw);
+        
+                      const reference = getFirestore()
+                          .collection("competitions")
+                          .doc(storeDrawId);
+        
+                      const competition = {
+                        competitionId: reference.id,
+                        storeFK: storeDraw.storeFK,
+                        // storeImageLocation: storeDraw.storeImageURL,
+                        // storeName: storeDraw.storeName,
+                        competitionSectionName: storeDraw.sectionName,
+                        isLive: true,
+                        dateTime: storeDraw.drawDateAndTime,
+                        joiningFee: storeDraw.joiningFee,
+                        numberOfGrandPrices: storeDraw.numberOfGrandPrices,
+                        isOver: false,
+                        isFake: storeDraw.isFake,
+                      };
+         
+                      await reference.set(competition);  
                     }
-                  });
+                 });
             });
-          }
+          } 
         });
+
     res.json({result: `Done Converting Store Draws Into Competitions.`});
   } catch (e) {
     logger.log(e);
   }
 });
 
-/* Make sure all competitions start at an acceptable time,
-like 08:30 for instance.*/
-// http://127.0.0.1:5001/alcoholic-expressions/us-central1/initiateRemainingTimeCountDown
-export const initiateRemainingTimeCountDown =
+export const createGrandPricesGrid =
 onDocumentCreated("/competitions/" +
   "{competitionId}", async (event) => {
-  const day = event.data.data().dateTime.day;
-  const month = event.data.data().dateTime.month;
-  const year = event.data.data().dateTime.year;
-  const hour = event.data.data().dateTime.hour;
-  const minute = event.data.data().dateTime.minute;
+  const competitionId = event.data.data()["competitionId"];
+  const numberOfGrandPrices = event.data.data()["numberOfGrandPrices"];
+  const storeFK = event.data.data()["storeFK"];
 
-  const collectionId = `${day}-${month}-${year}_${hour}${minute}`;
+  getFirestore()
+      .collection("competitions")
+      .doc(competitionId)
+      .collection("grand_prices_grids")
+      .onSnapshot(async (grandPricesGridSnapshot)=>{
+      // Only add a new grand price grid if one does not exist yet.
+        if (grandPricesGridSnapshot.size==0) {
+        /* Convert each drawGrandPrice into a
+        grandPriceToken and save it.*/
+          const reference = getFirestore()
+              .collection("competitions")
+              .doc(competitionId)
+              .collection("grand_prices_grids")
+              .doc();
+
+          // Step 4
+          /* Used to create the number of iterations
+        when picking grand price to be won and a winner.*/
+          const randomNoOfRepeataions = 3 +
+        Math.floor(Math.random()*3);
+          /* Time it would take to pick a grand price
+        to be won.*/
+          const durationInSeconds = numberOfGrandPrices*
+        randomNoOfRepeataions;
+          /* The order of visiting the grand prices,
+        the last one is the one to be given to the
+        winner.*/
+          let grandPricesOrder = [];
+          /* Create the order with which grand prices
+        will be visited.*/
+          let index;
+          // Make sure all grand prices are visited.
+          for (index = 0; index < numberOfGrandPrices;
+            index++) {
+            grandPricesOrder.push(index);
+          }
+          // Create additional way to visit grand prices.
+          for (index = numberOfGrandPrices;
+            index < durationInSeconds; index++) {
+            grandPricesOrder
+                .push(Math.floor(Math.random()*
+              numberOfGrandPrices),
+                );
+          }
+
+          // Suffle the list to make sure the order is random.
+          grandPricesOrder = shuffle(grandPricesOrder);
+
+          const grandPricesGrid = {
+            grandPricesGridId: reference.id,
+            competitionFK: competitionId,
+            numberOfGrandPrices: numberOfGrandPrices,
+            currentlyPointedTokenIndex: 0,
+            grandPricesOrder: grandPricesOrder,
+            duration: durationInSeconds,
+            hasStarted: false,
+            hasStopped: false,
+            storeFK: storeFK,
+            isFake: event.data.data()["isFake"],
+          };
+
+          await reference.set(grandPricesGrid);
+        }
+      });
+});
+
+export const createGrandPricesTokens =
+  onDocumentCreated("/competitions/" +
+    "{competitionId}/grand_prices_grids/" +
+    "{grandPriceGridId}", async (event) => {
+    const competitionFK = event.data.data()["competitionFK"];
+    const grandPricesGridId = event.data.data()["grandPricesGridId"];
+    const storeFK = event.data.data()["storeFK"];
+
+    getFirestore()
+        .collection("stores")
+        .doc(storeFK)
+        .collection("store_draws")
+        .doc(competitionFK)
+        .collection("draw_grand_prices")
+        .onSnapshot(async (drawGrandPricesSnapshot)=>{
+          if (drawGrandPricesSnapshot.size>0) {
+            drawGrandPricesSnapshot.forEach(
+                async (drawGrandPrice)=>{
+                  const tokenReference =
+                  getFirestore()
+                      .collection("competitions")
+                      .doc(competitionFK)
+                      .collection("grand_prices_grids")
+                      .doc(grandPricesGridId)
+                      .collection("grand_prices_tokens")
+                      .doc();
+
+                  const grandPriceToken ={
+                    grandPriceTokenId:
+                    tokenReference.id,
+                    grandPriceGridFK:
+                    grandPricesGridId,
+                    tokenIndex:
+                    drawGrandPrice.data().grandPriceIndex,
+                    isPointed:
+                    drawGrandPrice.data().grandPriceIndex==0,
+                    imageURL:
+                    drawGrandPrice.data().imageURL,
+                    description:
+                    drawGrandPrice.data().description,
+                    isFake: event.data.data()["isFake"],
+                  };
+                  await tokenReference.set(grandPriceToken);
+                });
+          }
+        });
+  });
+
+export const createGroupCompetitiorsGrid =
+onDocumentCreated("/competitions/" +
+"{competitionId}", async (event) => {
+  const competitionId = event.data.data()["competitionId"];
+  const storeFK = event.data.data()["storeFK"];
+  const competitionSectionName = event.data.data()["competitionSectionName"];
+
+  getFirestore()
+      .collection("competitions")
+      .doc(competitionId)
+      .collection("group_competitors_grids")
+      .onSnapshot(async (groupCompetitorsGridSnapshot)=>{
+      // Only add a new group competitors grid if one does not exist yet.
+        if (groupCompetitorsGridSnapshot.size==0) {
+          getFirestore()
+              .collection("groups")
+              .where("groupSectionName", "==", competitionSectionName)
+              .get().then(async (groupsSnapshot)=>{
+                logger.log('No Of Qualifying Groups', groupsSnapshot.size);
+                if (groupsSnapshot.size>0) {
+                  const reference = getFirestore()
+                      .collection("competitions")
+                      .doc(competitionId)
+                      .collection("group_competitors_grids")
+                      .doc();
+
+                  const numberOfGroupCompetitorsSoFar = groupsSnapshot.size;
+                  const groupCompetitorsGridId = reference.id;
+                  const randomNoOfRepeataions = 3 +
+                  Math.floor(Math.random()*3);
+
+                  // Time it would take to pick a winner group.
+                  let groupPickingDurationInSeconds =
+                  numberOfGroupCompetitorsSoFar *
+                  randomNoOfRepeataions;
+
+                  const originalCompetitorsOrder = [];
+                  let competitorsOrder = [];
+
+                  // Make sure all competitors are visited.
+                  groupsSnapshot.docs.forEach((groupDoc)=>{
+                    originalCompetitorsOrder.push(groupDoc.id);
+                    competitorsOrder.push(groupDoc.id);
+                  });
+
+                  /* The order of visiting competitors
+                  are kept here.*/
+                  let index;
+
+                  // Create additional way of visiting competitors.
+                  for (index =
+                  numberOfGroupCompetitorsSoFar;
+                    index < groupPickingDurationInSeconds;
+                    index++) {
+                    competitorsOrder.push(
+                        originalCompetitorsOrder[
+                            Math.floor(Math.random()*
+                      originalCompetitorsOrder.length)
+                        ]);
+                  }
+                  // Make sure competitors are visited randomly.
+                  competitorsOrder = shuffle(competitorsOrder);
+
+                  const groupCompetitorsGrid = {
+                    competitorsGridId: groupCompetitorsGridId,
+                    competitionFK: competitionId,
+                    numberOfGroupCompetitors:
+                    numberOfGroupCompetitorsSoFar,
+                    currentlyPointedTokenIndex: 0,
+                    competitorsOrder:
+                    competitorsOrder,
+                    groupPickingDurationInSeconds:
+                    groupPickingDurationInSeconds,
+                    hasStarted: false,
+                    hasStopped: false,
+                    storeFK: storeFK,
+                    competitionSectionName: competitionSectionName,
+                    isFake: event.data.data()["isFake"],
+                  };
+
+                  await reference.set(groupCompetitorsGrid);
+                }
+              });
+        }
+      });
+});
+
+export const createGroupCompetitorsTokens =
+  onDocumentCreated("/competitions/" +
+  "{competitionId}/group_competitors_grids/" +
+  "{groudCompetitorGridId}", async (event) => {
+    const competitionFK =
+    event.data.data()["competitionFK"];
+    const competitionSectionName = 
+    event.data.data()["competitionSectionName"];
+
+    const groupCompetitorsGridId =
+    event.data.data()["competitorsGridId"];
+
+    getFirestore()
+        .collection("groups")
+        .where("groupSectionName", "==", competitionSectionName)
+        .onSnapshot(
+            async (groupsSnapshot)=>{
+              logger.log('No of groups', groupsSnapshot.size);
+              if (groupsSnapshot.size>0) {
+                for (let groupIndex = 0; groupIndex <
+                  groupsSnapshot.size; groupIndex++) {
+                  const groupDoc =
+                  groupsSnapshot.docs.at(groupIndex);
+                  const tokenDocReference =
+                    getFirestore()
+                        .collection("competitions")
+                        .doc(competitionFK)
+                        .collection("group_competitors_grids")
+                        .doc(groupCompetitorsGridId)
+                        .collection("group_competitors_tokens")
+                        .doc();
+
+                  const groupCompetitorToken = {
+                    groupCompetitorTokenId:
+                      tokenDocReference
+                          .id,
+                    groupCompetitorsGridFK:
+                      groupCompetitorsGridId,
+                    tokenIndex: groupIndex,
+                    isPointed: groupIndex==0,
+                    group: groupDoc.data(),
+                    isFake: event.data.data()["isFake"],
+                  };
+
+                  await tokenDocReference
+                      .set(groupCompetitorToken);
+                }
+              }
+            });
+  });
+
+/* Make sure all competitions start at an acceptable time,
+like 08:30 for instance.*/
+export const maintainRemainingTimeAndPassedTime =
+onDocumentCreated("/competitions/" +
+  "{competitionId}", async (event) => {
+  const day = event.data.data().dateTime["day"];
+  const month = event.data.data().dateTime["month"];
+  const year = event.data.data().dateTime["year"];
+  const hour = event.data.data().dateTime["hour"];
+  const minute = event.data.data().dateTime["minute"];
+
+  const collectionId = `${day}-${month}-${year}-${hour}-${minute}`;
 
   const reference = getFirestore().collection("read_only")
       .doc(collectionId);
 
   reference.onSnapshot((snapshot)=>{
     if (!snapshot.exists) {
-      let second = 300; // Remaining seconds
-      const remainingTimeTimerId = setInterval(async ()=>{
-        if (second==0) {
-          clearInterval(remainingTimeTimerId);
-        }
-        else {
-          second--;
+      // Remaining seconds should always start at -300.
+      let second = -20;
+      const timerId = setInterval(async ()=>{
+        if (second==tokenPickingHelper) {
+          clearInterval(timerId);
+        } else {
+          second++;
         }
         reference.set({
           remainingTime: second,
-        }).then(()=>{
-          logger.log(second);
+          // competitionsPassedTime: 0,
         });
       }, 1000);
-      logger.log(`Remaining Time Update In Progress...`);
     }
   });
 });
 
+/* Make sure when all competitions that began at the same time are finished
+the competitionsPassedTime is reset properly.*/
+export const maintainCompetitionsState = onDocumentUpdated(
+    "/read_only/{readOnlyId}", async (event) => {
+      const readOnlyId = event.params.readOnlyId;
+      const readOnlyReference = getFirestore().collection("read_only")
+          .doc(readOnlyId);
+
+
+      readOnlyReference.onSnapshot(
+          (doc)=>{
+          // The remaining time for competitions to start.
+            const remainingTime = doc.data().remainingTime;
+            
+
+            const commonCompetitionsDateTime = readOnlyId.split("-");
+            const day = commonCompetitionsDateTime[0];
+            const month = commonCompetitionsDateTime[1];
+            const year = commonCompetitionsDateTime[2];
+            const hour = commonCompetitionsDateTime[3];
+            const minute = commonCompetitionsDateTime[4];
+            logger.log(`${commonCompetitionsDateTime[0]}-
+              ${commonCompetitionsDateTime[1]}
+              ${commonCompetitionsDateTime[2]}-
+              ${commonCompetitionsDateTime[3]}-
+              ${commonCompetitionsDateTime[4]}`);
+
+            const competitionsReference = getFirestore()
+                .collection("competitions");
+
+
+            competitionsReference.onSnapshot((competitionsSnapshot)=>{
+              if (competitionsSnapshot.size>0) {
+                competitionsSnapshot.forEach((competitionDoc)=>{
+                  if (competitionDoc.exists && 
+                    competitionDoc.data().dateTime.day == day &&
+                    competitionDoc.data().dateTime.month == month &&
+                    competitionDoc.data().dateTime.year == year &&
+                    competitionDoc.data().dateTime.hour == hour &&
+                    competitionDoc.data().dateTime.minute == minute
+                  ) {
+                    // Competition begings
+                    if (remainingTime==0) {
+                      logger.log("competition started");
+                      return competitionDoc.ref.update({
+                        isLive: true,
+                      });
+                    }
+                    const competitionId = competitionDoc.id;
+                    let groupPickingDurationInSeconds;
+                    let grandPricePickingDurationInSeconds;
+
+                    // Update each competition's state if necessary.
+                    getFirestore()
+                        .collection("competitions")
+                        .doc(competitionId)
+                        .collection("grand_prices_grids")
+                        .onSnapshot(async (grandPricesGridSnapshot)=>{
+                          /* Only read if there is only one grand prices
+                          grid for a given competition. */
+                          if (grandPricesGridSnapshot.size==1) {
+                            
+                            grandPricesGridSnapshot.docs.map(
+                                (grandPricesGridDoc)=>{
+                                  const grandPricesGridId = 
+                                  grandPricesGridDoc.data().grandPricesGridId;
+
+                                  grandPricePickingDurationInSeconds =
+                                  Number(grandPricesGridDoc.data().duration);
+                                  
+                                  // Keep updating the currently pointed grand price.
+                                  if(remainingTime>=0 && remainingTime <grandPricePickingDurationInSeconds){
+
+                                    // Perform currently pointed token index.
+                                    grandPricesGridDoc.ref.update({
+                                      currentlyPointedTokenIndex: remainingTime
+                                    });
+
+                                    // Retrieve the order with which grand prices will be visited.
+                                    const grandPricesOrderArray = 
+                                    grandPricesGridDoc.data().grandPricesOrder
+                                    .split(",");
+                                    
+                                    // Current pointedIndex
+                                    const grandPriceTokenIndex = 
+                                    grandPricesOrderArray[remainingTime];
+
+                                    // It's time to show a new grand price to possibly win.
+                                    getFirestore()
+                                    .collection("competitions")
+                                    .doc(competitionId)
+                                    .collection("grand_prices_grids")
+                                    .doc(grandPricesGridId)
+                                    .collection("grand_prices_tokens")
+                                    .onSnapshot((grandPricesTokensSnapshot)=>{
+                                      logger.log("competitionId", competitionId, "grandPriceGridId", grandPricesGridDoc.id, "tokens");
+                                      grandPricesTokensSnapshot.forEach((grandPriceTokenDoc)=>{
+                                        
+                                        /* Change the old pointed grand price token if
+                                        it is pointed and it tokenIndex is not the same 
+                                        as the new one.*/
+                                        if(grandPriceTokenDoc.data().isPointed && 
+                                        grandPriceTokenDoc.data().tokenIndex != grandPriceTokenIndex){
+                                          grandPriceTokenDoc.ref.update({
+                                            isPointed: false,
+                                          });
+                                        }
+                                        /* Change the old pointed grand price token if
+                                        it is not pointed and it tokenIndex is not the same 
+                                        as the new one.*/
+                                        else if(!grandPriceTokenDoc.data().isPointed &&
+                                        grandPriceTokenDoc.data().tokenIndex ==
+                                        grandPriceTokenIndex){
+                                          grandPriceTokenDoc.ref.update({
+                                            isPointed: true,
+                                          });
+                                        }
+                                      });
+                                    });
+                                  }
+                                });
+
+                                // It's time to show a new group competitor to possibly win.
+                                getFirestore()
+                                  .collection("competitions")
+                                  .doc(competitionId)
+                                  .collection("group_competitors_grids")
+                                  .onSnapshot(async (groupCompetitorsGridSnapshot)=>{
+                                  /* Only read if there is only one competitors grid
+                                  for a given competition. */
+                                    if (groupCompetitorsGridSnapshot.size==1) {
+                                      groupCompetitorsGridSnapshot.docs.map(
+                                          (groupCompetitorsGridDoc)=>{
+                                            logger.log("competitionId", competitionId, 
+                                            "groupCompetitorsGridId", groupCompetitorsGridDoc.id,);
+                                            groupPickingDurationInSeconds =
+                                            Number(groupCompetitorsGridDoc.data()
+                                            .groupPickingDurationInSeconds);
+
+                                            // Keep updating the currently pointed competitor group.
+                                            if(remainingTime>grandPricePickingDurationInSeconds &&
+                                              remainingTime<=grandPricePickingDurationInSeconds +
+                                              groupPickingDurationInSeconds 
+                                            ){
+                                              // Perform currently pointed token index.
+                                              groupCompetitorsGridDoc.ref.update({
+                                                currentlyPointedTokenIndex: remainingTime-grandPricePickingDurationInSeconds
+                                              });
+
+                                              // Retrieve the order with which group competitors will be visited.
+                                              const competitorsOrderArray = 
+                                              groupCompetitorsGridDoc.data().competitorsOrder
+                                              .spli(",");
+                                              
+                                              // Current pointedIndex
+                                              const groupCompetiroTokenIndex = 
+                                              competitorsOrderArray[remainingTime-grandPricePickingDurationInSeconds];
+
+                                              // It's time to show a new grand price to possibly win.
+                                              getFirestore()
+                                              .collection("competitions")
+                                              .doc(competitionId)
+                                              .collection("group_competitors_grids")
+                                              .doc(grandPricesGridId)
+                                              .collection("group_competitors_tokens")
+                                              .onSnapshot((groupCompetitorsTokensSnapshot)=>{
+                                                logger.log("competitionId", competitionId, 
+                                                "groupCompetitorsGridId", groupCompetitorsGridDoc.id,
+                                                "tokens");
+                                                groupCompetitorsTokensSnapshot.forEach((groupCompetitorTokenDoc)=>{
+                                                  
+                                                  /* Change the old pointed group competitor token if
+                                                  it is pointed and it tokenIndex is not the same 
+                                                  as the new one.*/
+                                                  if(groupCompetitorTokenDoc.data().isPointed && 
+                                                  groupCompetitorTokenDoc.data().tokenIndex != groupCompetiroTokenIndex){
+                                                    groupCompetitorTokenDoc.ref.update({
+                                                      isPointed: false,
+                                                    });
+                                                    
+                                                  }
+                                                  /* Change the old pointed group competitor token if
+                                                  it is not pointed and it tokenIndex is not the same 
+                                                  as the new one.*/
+                                                  else if(!groupCompetitorTokenDoc.data().isPointed &&
+                                                  groupCompetitorTokenDoc.data().tokenIndex ==
+                                                  groupCompetiroTokenIndex){
+                                                    groupCompetitorTokenDoc.ref.update({
+                                                      isPointed: true,
+                                                    });
+                                                  }
+                                                });
+                                              });
+                                            }
+                                          });
+
+
+
+                                    // The end of a competition.
+                                    if (remainingTime>
+                                      grandPricePickingDurationInSeconds +
+                                      groupPickingDurationInSeconds + 3) {
+                                      return competitionDoc.ref.update({
+                                        isOver: true,
+                                        isLive: false,
+                                      });
+                                    }
+                                  }
+                                });
+                          }
+                        });
+                  }
+                });
+              }
+            });
+          });
+    });
+
+/* eslint max-len: ["off", { "code", 80, "comments": 80 }] */
+export const createWonPriceSummary =
+onDocumentUpdated("/competitions/" +
+  "{competitionId}", async (event) => {
+  const reference = getFirestore()
+      .collection("competitions")
+      .doc(event.params.competitionId);
+  reference.onSnapshot((competitionsSnapshot)=>{
+    if (competitionsSnapshot.exists) {
+      const isOver = competitionsSnapshot.data().isOver;
+      const isLive = competitionsSnapshot.data().isLive; 
+      const isFake = competitionsSnapshot.data().isFake; 
+
+      if (isOver && isLive) {
+        logger.log("Competition isLive & isOver");
+        reference.update({isLive: false});
+        const wonPriceSummaryId =
+        competitionsSnapshot.data().competitionId;
+        const storeFK =
+        competitionsSnapshot.data().storeFK;
+
+        const storeReference = getFirestore()
+            .collection("stores")
+            .doc(storeFK);
+
+        storeReference.onSnapshot((snapshot)=>{
+          const storeName = snapshot.data().storeName;
+          const storeImageURL = snapshot.data().storeImageURL;
+          const storeSection = snapshot.data().sectionName;
+          const storeArea = snapshot.data().storeArea;
+
+          let groupName;
+          let groupSectionName;
+          let groupSpecificLocation;
+          let groupMembers;
+          let groupCreatorPhoneNumber;
+
+          let grandPriceDescription;
+          let grandPriceImageURL;
+
+          let groupCreatorUsername;
+          let groupCreatorImageURL;
+
+
+          getFirestore().collection("competitions")
+              .doc(wonPriceSummaryId)
+              .collection("group_competitors_grids")
+              .onSnapshot((groupCompetitorsGridSnapshot) => {
+                if (groupCompetitorsGridSnapshot.size==1) {
+                  groupCompetitorsGridSnapshot.forEach(
+                      (groupCompetitorsGridDoc)=>{
+                        const groupCompetitorsGridId =
+                    groupCompetitorsGridDoc.data().competitorsGridId;
+
+                        const competitorsList =
+                        groupCompetitorsGridDoc.data().competitorsOrder;
+                        const groupCreatorAsWinnerPhoneNumber =
+                        competitorsList[competitorsList.length-1];
+                        getFirestore().collection("competitions")
+                            .doc(wonPriceSummaryId)
+                            .collection("group_competitors_grids")
+                            .doc(groupCompetitorsGridId)
+                            .collection("group_competitors_tokens")
+                            .onSnapshot((groupCompetitorsTokensSnapshot)=>{
+                              if (groupCompetitorsTokensSnapshot.size>0) {
+                                groupCompetitorsTokensSnapshot.forEach(
+                                    (groupCompetitorTokenDoc)=>{
+                                      if (groupCreatorAsWinnerPhoneNumber==
+                                        groupCompetitorTokenDoc.data()
+                                            .group.groupCreatorPhoneNumber) {
+                                        logger.log("won group found");
+                                        const group =
+                                        groupCompetitorTokenDoc.data().group;
+
+                                        groupName =
+                                        group.groupName;
+
+                                        groupSectionName =
+                                        group.groupSectionName;
+
+                                        groupSpecificLocation =
+                                        group.groupSpecificArea;
+
+                                        groupMembers =
+                                        group.groupMembers;
+
+                                        groupCreatorPhoneNumber =
+                                        group.groupCreatorPhoneNumber;
+
+                                        const alcoholicDocReference =
+                                        getFirestore()
+                                            .collection("alcoholics")
+                                            .doc(groupCreatorPhoneNumber);
+
+                                        alcoholicDocReference.onSnapshot(
+                                            (snapshot)=>{
+                                              groupCreatorUsername =
+                                          snapshot.data().username;
+                                              groupCreatorImageURL =
+                                          snapshot.data().profileImageURL;
+
+                                              /* finally set the grand price
+                                          description. */
+                                              getFirestore()
+                                                  .collection("competitions")
+                                                  .doc(wonPriceSummaryId)
+                                                  .collection(
+                                                      "grand_prices_grids")
+                                                  .onSnapshot(
+                                                      (grandPricesGridSnapshot) => {
+                                                        if (grandPricesGridSnapshot.size==1) {
+                                                          grandPricesGridSnapshot.forEach(
+                                                              (grandPriceGridDoc)=>{
+                                                                const grandPricesGridId =
+                                                                grandPriceGridDoc.data()
+                                                                    .grandPricesGridId;
+                                                                const grandPricesOrder =
+                                                                grandPriceGridDoc.data()
+                                                                    .grandPricesOrder;
+                                                                const wonGrandPriceIndex =
+                                                                grandPricesOrder[grandPricesOrder.length-1];
+
+                                                                getFirestore()
+                                                                    .collection("competitions")
+                                                                    .doc(wonPriceSummaryId)
+                                                                    .collection("grand_prices_grids")
+                                                                    .doc(grandPricesGridId)
+                                                                    .collection("grand_prices_tokens")
+                                                                    .onSnapshot(
+                                                                        (grandPricesTokensSnapshot)=>{
+                                                                          if (grandPricesTokensSnapshot.size>0) {
+                                                                            logger.log("grand prices tokens exist");
+                                                                            grandPricesTokensSnapshot.forEach(
+                                                                                async (grandPriceTokenDoc)=>{
+                                                                                  if (wonGrandPriceIndex==
+                                                                                  grandPriceTokenDoc.data().tokenIndex) {
+                                                                                    logger.log("won price found");
+                                                                                    grandPriceDescription =
+                                                                                    grandPriceTokenDoc.data().description;
+                                                                                    grandPriceImageURL =
+                                                                                    grandPriceTokenDoc.data().imageURL;
+                                                                                    const wonPriceSummaryReference =
+                                                                                    getFirestore()
+                                                                                        .collection("won_prices_summaries")
+                                                                                        .doc(wonPriceSummaryId);
+                                                                                    const wonPriceSummary = {
+                                                                                      wonPriceSummaryId:
+                                                                                      wonPriceSummaryId,
+                                                                                      storeFK: storeFK,
+                                                                                      groupName: groupName,
+                                                                                      groupSectionName:
+                                                                                      groupSectionName,
+                                                                                      groupSpecificLocation:
+                                                                                      groupSpecificLocation,
+                                                                                      groupMembers: groupMembers,
+                                                                                      grandPriceDescription:
+                                                                                      grandPriceDescription,
+                                                                                      wonGrandPriceImageURL: grandPriceImageURL,
+                                                                                      storeImageURL: storeImageURL,
+                                                                                      storeName: storeName,
+                                                                                      storeSection: storeSection,
+                                                                                      storeArea: storeArea,
+                                                                                      wonDate: competitionsSnapshot.data().dateTime,
+                                                                                      groupCreatorUsername: groupCreatorUsername,
+                                                                                      groupCreatorImageURL: groupCreatorImageURL,
+                                                                                      groupCreatorPhoneNumber: groupCreatorPhoneNumber,
+                                                                                      isFake: isFake,
+                                                                                    };
+
+                                                                                    // Create won price summary.
+                                                                                    await wonPriceSummaryReference
+                                                                                        .set(wonPriceSummary);
+                                                                                    /*
+                                                                                    // Delete corresponding competition.
+                                                                                    await getFirestore()
+                                                                                        .collection("competitions")
+                                                                                        .doc(wonPriceSummaryId).delete();
+
+                                                                                    // Delete corresponding store draw.
+                                                                                    getFirestore()
+                                                                                        .collection("stores")
+                                                                                        .doc(storeFK)
+                                                                                        .collection("store_draws")
+                                                                                        .doc(wonPriceSummaryId).delete(); */
+                                                                                  }
+                                                                                });
+                                                                          }
+                                                                        });
+                                                              });
+                                                        }
+                                                      });
+                                            });
+                                      }
+                                    });
+                              }
+                            });
+                      });
+                }
+              });
+        });
+      }
+    }
+  });
+});
+
+
+// http://127.0.0.1:5001/alcoholic-expressions/us-central1/createSupportedAreas/
+export const createSupportedAreas = onRequest(async (req, res)=>{
+  let reference;
+
+  supportedCountries.forEach(async (countryValue, countryKey, country)=>{
+    reference = getFirestore()
+        .collection("supported_countries")
+        .doc();
+
+
+    const countryCodeAndName = countryKey.split("-");
+
+    const countryObject = {
+      countryId: reference.id,
+      countryCode: countryCodeAndName[0],
+      countryName: countryCodeAndName[1],
+    };
+    await reference.set(countryObject, {merge: true});
+
+    supportedProvincesOrStates.forEach(async (provinceOrStateValue, provinceOrStateKey, provinceOrState)=>{
+      reference = getFirestore()
+          .collection("supported_provinces_or_states")
+          .doc();
+
+      const provinceOrStateObject = {
+        provinceOrStateId: reference.id,
+        provinceOrStateName: provinceOrStateKey,
+        country: countryObject,
+      };
+      await reference.set(provinceOrStateObject, {merge: true});
+
+      supportedCities.forEach(async (cityValue, cityKey, city)=>{
+        reference = getFirestore()
+            .collection("supported_cities")
+            .doc();
+
+        const cityObject = {
+          cityId: reference.id,
+          cityName: cityKey,
+          provinceOrState: provinceOrStateObject,
+        };
+        await reference.set(cityObject, {merge: true});
+
+        supportedSuburbOrTownships.forEach(async (suburbOrTownshipValue, suburbOrTownshipKey, suburbOrTownship)=>{
+          reference = getFirestore()
+              .collection("supported_suburbs_or_townships")
+              .doc();
+          const suburbOrTownshipObject = {
+            suburbOrTownshipId: reference.id,
+            suburbOrTownshipName: suburbOrTownshipKey,
+            city: cityObject,
+          };
+          await reference.set(suburbOrTownshipObject, {merge: true});
+
+          for (let areaIndex = 0; areaIndex < suburbOrTownshipValue.length; areaIndex++) {
+            reference = getFirestore()
+                .collection("supported_areas")
+                .doc();
+            const areaObject = {
+              areaId: reference.id,
+              areaName: suburbOrTownshipValue[areaIndex],
+              suburbOrTownship: suburbOrTownshipObject,
+            };
+            await reference.set(areaObject, {merge: true});
+          }
+        });
+      });
+    });
+  });
+
+  res.json({result: `Supported Areas Created Successfully.`});
+});
+
 // ##################Production Functions [End]########################
 
-// ########################################Development Functions [Start]#######################################################
+// ########Development Functions [Start]###############
 
 /*
-==================================================================================================================================
+===============================================================
+http://127.0.0.1:5001/alcoholic-expressions/us-central1/createSupportedAreas/
 http://127.0.0.1:5001/alcoholic-expressions/us-central1/saveFakeAlcoholics
+http://127.0.0.1:5001/alcoholic-expressions/us-central1/saveFakeGroups
 http://127.0.0.1:5001/alcoholic-expressions/us-central1/createFakeStoreOwners
 http://127.0.0.1:5001/alcoholic-expressions/us-central1/saveFakeStores
-http://127.0.0.1:5001/alcoholic-expressions/us-central1/createFakeStoreDraws?storeIndex=i[0-9]
-http://127.0.0.1:5001/alcoholic-expressions/us-central1/updateStoreDrawsDates
-http://127.0.0.1:5001/alcoholic-expressions/us-central1/fromDrawsToCompetitionsTransaction
-==================================================================================================================================
-*/
-
-//===========================================Create Alcoholic Data[Start]===========================================
+http://127.0.0.1:5001/alcoholic-expressions/us-central1/convertStoreDrawsToCompetitions
+==============================================================
+*/ 
+// ========Create Alcoholic Data[Start]=============
 // Create Fake Alcoholics Usernames.
 const alcoholicsUsernames = [
-  'Snathi', 'Thami', 'Mbuso', 'Mdu', 'Sam', 'Vusi', 'Sadam',
-  'Toto', 'Javas', 'Mlimi', 'Maliyeqolo', 'Sihle', 'Mtho',
-  'Mazweni', 'Yninini', 'Sphiwe', 'Mazeze', 'Theniza', 'Jam Jam',
-  'Radebe',
+  // Cato Crest
+  "Snathi", "Thami", "Mbuso", "Mdu", "Sam", "Vusi", "Sadam",
+  "Toto", "Javas", "Mlimi", "Maliyeqolo", "Sihle", "Mtho",
+  "Mazweni", "Yninini", "Sphiwe", "Mazeze", "Theniza", "Jam Jam",
+  "Radebe", 
+  
+  // Umlazi H
+  "Zakes", "Jimmy", "Mabotsa", "Ntulo", "Snoopy", "Lizwi",
+  "Joshua", "Msizi", "Ntwarhayi", "Mbeko", "Bashuthe", "Crouch",
+  "Nkazozo", "George", "Madombolo", "Gxabhashe", "Mabhunu",
+  "Tho", "Mthoko Mrawu", "Khumkula",
+
+  "Wa", "Swazi", "Cebo", "Ningi", "Sendy", "Ningi", "Kwanele",
+  "Lindiwe", "Sindiswa", "Anele", "Zizipho", "Nonhle", "Amanda",
+  "Candice", "Sya", "Sandile", "Zethu", "Ankel Sam", "Thalente",
+  "Sipho Esihle",
+
+  "L Msomi", "P Majozi", "Z Mnguni", "Mrs Mtshali", "Mr Brown",
+  "Mrs Johnson", "P Green", "Zanele", "Zenzele", "JJ Zondo",
+  "Nhlaka", "Simo", "Senzo", "Sli", "Sne", "Sma", "Xoli", "Lindo",
+  "Aya", "Ayo", "Mini", "Sisi", "Mpe", "Nqo",
+
+  // UKZN Haward
+  "Clinton", "Mfundo", "Popayi", "Sfiso Black", "Njabulo", "Msa",
+  "Mtapile", "Zambane", "Dakhi", "Khetha", "Mabhiza", "Zulu", "Mlaba",
+  "Rosh", "Mngwane", "Ben", "Malimela", "Mkhari", "Mahomed", "Malimela",
+
+  // DUT Durban Central
+  "Cindy", "Nkosi",
+
 ];
 // Create Fake Alcoholics Images.
 const alcoholicsImages = [
-  'gs://alcoholic-expressions.appspot.com/alcoholics/+27625446322.jpg',
-  'gs://alcoholic-expressions.appspot.com/alcoholics/+27625446353.jpg',
-  'gs://alcoholic-expressions.appspot.com/alcoholics/+27668743000.jpg',
-  'gs://alcoholic-expressions.appspot.com/alcoholics/+27668743411.jpg',
-  'gs://alcoholic-expressions.appspot.com/alcoholics/+27744446350.jpg',
-  'gs://alcoholic-expressions.appspot.com/alcoholics/+27765446353.jpg',
-  'gs://alcoholic-expressions.appspot.com/alcoholics/+27765454543.jpg',
-  'gs://alcoholic-expressions.appspot.com/alcoholics/+27788746350.jpg',
-  'gs://alcoholic-expressions.appspot.com/alcoholics/+27811740000.jpg',
-  'gs://alcoholic-expressions.appspot.com/alcoholics/+27811740113.jpg',
-  'gs://alcoholic-expressions.appspot.com/alcoholics/+27848740000.jpg',
-  'gs://alcoholic-expressions.appspot.com/alcoholics/+27848740212.jpg',
-  'gs://alcoholic-expressions.appspot.com/alcoholics/+27848741215.jpg',
-  'gs://alcoholic-expressions.appspot.com/alcoholics/+27848741333.jpg',
-  'gs://alcoholic-expressions.appspot.com/alcoholics/+27848743411.jpg',
-  'gs://alcoholic-expressions.appspot.com/alcoholics/+27848744324.jpg',
-  'gs://alcoholic-expressions.appspot.com/alcoholics/+27848746311.jpg',
-  'gs://alcoholic-expressions.appspot.com/alcoholics/+27848746350.jpg',
-  'gs://alcoholic-expressions.appspot.com/alcoholics/+27848746353.jpg',
-  'gs://alcoholic-expressions.appspot.com/alcoholics/+27848746456.jpg',
+  // Cato Crest
+  "/alcoholics/profile_images/+27848746353.jpg",
+  "/alcoholics/profile_images/+27848741215.jpg",
+  "/alcoholics/profile_images/+27848743411.jpg",
+  "/alcoholics/profile_images/+27765446353.jpg", 
+  "/alcoholics/profile_images/+27848740000.jpg",
+  "/alcoholics/profile_images/+27848746350.jpg",
+  "/alcoholics/profile_images/+27668743411.jpg",
+  "/alcoholics/profile_images/+27625446353.jpg",
+  "/alcoholics/profile_images/+27811740000.jpg",
+  "/alcoholics/profile_images/+27788746350.jpg",
+  "/alcoholics/profile_images/+27848746311.jpg",
+  "/alcoholics/profile_images/+27848741333.jpg",
+  "/alcoholics/profile_images/+27848744324.jpg",
+  "/alcoholics/profile_images/+27765454543.jpg",
+  "/alcoholics/profile_images/+27848740212.jpg",
+  "/alcoholics/profile_images/+27848746456.jpg",
+  "/alcoholics/profile_images/+27668743000.jpg",
+  "/alcoholics/profile_images/+27625446322.jpg",
+  "/alcoholics/profile_images/+27811740113.jpg",
+  "/alcoholics/profile_images/+27744446350.jpg",
+
+  // Umlazi H
+  "/alcoholics/profile_images/+27732540980.jpg",
+  "/alcoholics/profile_images/+27657635410.jpg",
+  "/alcoholics/profile_images/+27832553370.jpg",
+  "/alcoholics/profile_images/+27642312958.jpg",
+  "/alcoholics/profile_images/+27672123090.jpg",
+  "/alcoholics/profile_images/+27832674900.jpg",
+  "/alcoholics/profile_images/+27657788900.jpg",
+  "/alcoholics/profile_images/+27781213455.jpg",
+  "/alcoholics/profile_images/+27621234765.jpg",
+  "/alcoholics/profile_images/+27842390870.jpg",
+  "/alcoholics/profile_images/+27638947650.jpg",
+  "/alcoholics/profile_images/+27863423400.jpg",
+  "/alcoholics/profile_images/+27656736820.jpg",
+  "/alcoholics/profile_images/+27812305870.jpg",
+  "/alcoholics/profile_images/+27732540986.jpg",
+  "/alcoholics/profile_images/+27657635412.jpg",
+  "/alcoholics/profile_images/+27832553371.jpg",
+  "/alcoholics/profile_images/+27642312957.jpg",
+  "/alcoholics/profile_images/+27672123097.jpg",
+  "/alcoholics/profile_images/+27832674901.jpg",
+
+  "/alcoholics/profile_images/+27732540983.jpg",
+  "/alcoholics/profile_images/+27657635413.jpg",
+  "/alcoholics/profile_images/+27832553373.jpg",
+  "/alcoholics/profile_images/+27642312953.jpg",
+  "/alcoholics/profile_images/+27672123093.jpg",
+  "/alcoholics/profile_images/+27832674903.jpg",
+  "/alcoholics/profile_images/+27657788903.jpg",
+  "/alcoholics/profile_images/+27781213453.jpg",
+  "/alcoholics/profile_images/+27621234763.jpg",
+  "/alcoholics/profile_images/+27842390873.jpg",
+  "/alcoholics/profile_images/+27638947653.jpg",
+  "/alcoholics/profile_images/+27863423403.jpg",
+  "/alcoholics/profile_images/+27656736823.jpg",
+  "/alcoholics/profile_images/+27812305873.jpg",
+  "/alcoholics/profile_images/+27732540985.jpg",
+  "/alcoholics/profile_images/+27657635414.jpg",
+  "/alcoholics/profile_images/+27832553374.jpg",
+  "/alcoholics/profile_images/+27642312954.jpg",
+  "/alcoholics/profile_images/+27672123094.jpg",
+  "/alcoholics/profile_images/+27832674904.jpg",
+
+  "/alcoholics/profile_images/+27674533328.jpg",
+  "/alcoholics/profile_images/+27674563548.jpg",
+  "/alcoholics/profile_images/+27674563118.jpg",
+  "/alcoholics/profile_images/+27674563228.jpg",
+  "/alcoholics/profile_images/+27675099018.jpg",
+  "/alcoholics/profile_images/+27787653548.jpg",
+  "/alcoholics/profile_images/+27674511128.jpg",
+  "/alcoholics/profile_images/+27674567778.jpg",
+  "/alcoholics/profile_images/+27674533329.jpg",
+  "/alcoholics/profile_images/+27674563549.jpg",
+  "/alcoholics/profile_images/+27674563119.jpg",
+  "/alcoholics/profile_images/+27674563229.jpg",
+  "/alcoholics/profile_images/+27675099019.jpg",
+  "/alcoholics/profile_images/+27787653549.jpg",
+  "/alcoholics/profile_images/+27674511129.jpg",
+  "/alcoholics/profile_images/+27674567779.jpg",
+  "/alcoholics/profile_images/+27674533320.jpg",
+  "/alcoholics/profile_images/+27674563540.jpg",
+  "/alcoholics/profile_images/+27674563110.jpg",
+  "/alcoholics/profile_images/+27674563220.jpg",
+  "/alcoholics/profile_images/+27675099010.jpg",
+  "/alcoholics/profile_images/+27787653540.jpg",
+  "/alcoholics/profile_images/+27674511120.jpg",
+  "/alcoholics/profile_images/+27674567770.jpg",
+
+  // UKZN Haward
+  "/alcoholics/profile_images/+27657788909.jpg",
+  "/alcoholics/profile_images/+27781213450.jpg",
+  "/alcoholics/profile_images/+27621234760.jpg",
+  "/alcoholics/profile_images/+27842390875.jpg",
+  "/alcoholics/profile_images/+27638947652.jpg",
+  "/alcoholics/profile_images/+27863423409.jpg",
+  "/alcoholics/profile_images/+27656736829.jpg",
+  "/alcoholics/profile_images/+27812305879.jpg",
+  "/alcoholics/profile_images/+27731540981.jpg",
+  "/alcoholics/profile_images/+27651635411.jpg",
+  "/alcoholics/profile_images/+27831553371.jpg",
+  "/alcoholics/profile_images/+27641312951.jpg",
+  "/alcoholics/profile_images/+27672123091.jpg",
+  "/alcoholics/profile_images/+27832674902.jpg",
+  "/alcoholics/profile_images/+27657788909.jpg",
+  "/alcoholics/profile_images/+27781213452.jpg",
+  "/alcoholics/profile_images/+27621234762.jpg",
+  "/alcoholics/profile_images/+27842390872.jpg",
+  "/alcoholics/profile_images/+27638947653.jpg",
+  "/alcoholics/profile_images/+27863423403.jpg",
+
+  // DUT Durban Central
+  "/alcoholics/profile_images/+27656736823.jpg",
+  "/alcoholics/profile_images/+27812305873.jpg",
+
 ];
+
 // Create Fake Alcoholics Phone Numbers
 const alcoholicsPhoneNumbers = [
-  '+27848746353',
-  '+27848741215',
-  '+27848743411',
-  '+27765446353',
-  '+27848740000',
-  '+27848746350',
-  '+27668743411',
-  '+27625446353',
-  '+27811740000',
-  '+27788746350',
-  '+27848746311',
-  '+27848741333',
-  '+27848744324',
-  '+27765454543',
-  '+27848740212',
-  '+27848746456',
-  '+27668743000',
-  '+27625446322',
-  '+27811740113',
-  '+27744446350',
+  // Cato Crest
+  "+27848746353",
+  "+27848741215",
+  "+27848743411",
+  "+27765446353",
+  "+27848740000",
+  "+27848746350",
+  "+27668743411",
+  "+27625446353",
+  "+27811740000",
+  "+27788746350",
+  "+27848746311",
+  "+27848741333",
+  "+27848744324",
+  "+27765454543",
+  "+27848740212",
+  "+27848746456",
+  "+27668743000",
+  "+27625446322",
+  "+27811740113",
+  "+27744446350",
+
+  // Umlazi H
+  "+27732540980",
+  "+27657635410",
+  "+27832553370",
+  "+27642312958",
+  "+27672123090",
+  "+27832674900",
+  "+27657788900",
+  "+27781213455",
+  "+27621234765",
+  "+27842390870",
+  "+27638947650",
+  "+27863423400",
+  "+27656736820",
+  "+27812305870",
+  "+27732540986",
+  "+27657635412",
+  "+27832553371",
+  "+27642312957",
+  "+27672123097",
+  "+27832674901",
+
+  "+27732540983",
+  "+27657635413",
+  "+27832553373",
+  "+27642312953",
+  "+27672123093",
+  "+27832674903",
+  "+27657788903",
+  "+27781213453",
+  "+27621234763",
+  "+27842390873",
+  "+27638947653",
+  "+27863423403",
+  "+27656736823",
+  "+27812305873",
+  "+27732540983",
+  "+27657635414",
+  "+27832553374",
+  "+27642312954",
+  "+27672123094",
+  "+27832674904", // 60
+
+  "+27674533328",
+  "+27674563548",
+  "+27674563118",
+  "+27674563228",
+  "+27675099018",
+  "+27787653548",
+  "+27674511128",
+  "+27674567778",
+  "+27674533329",
+  "+27674563549",
+  "+27674563119",
+  "+27674563229",
+  "+27675099019",
+  "+27787653549",
+  "+27674511129",
+  "+27674567779",
+  "+27674533320",
+  "+27674563540",
+  "+27674563110",
+  "+27674563220", // 80
+
+  "+27675099010",
+  "+27787653540", 
+  "+27674511120",
+  "+27674567770", // 84
+
+  // UKZN Haward
+  "+27657788909",
+  "+27781213450",
+  "+27621234760",
+  "+27842390875",
+  "+27638947652",
+  "+27863423409",
+  "+27656736829",
+  "+27812305879",
+  "+27731540981",
+  "+27651635411",
+  "+27831553371",
+  "+27641312951",
+  "+27672123091",
+  "+27832674902",
+  "+27657788909",
+  "+27781213452",
+  "+27621234762",
+  "+27842390872",
+  "+27638947653",
+  "+27863423403", // 104
+
+  // DUT Durban Central
+  "+27656736823",
+  "+27812305873",
 ];
-//===========================================Create Alcoholic Data[End]===========================================
+// ==========Create Alcoholic Data[End]===============
 
 
-//===========================================Create Stores Owners Data[Start]===========================================
+// ===========Create Stores Owners Data[Start]=================
 // Create Fake Store Owner Phone Numbers.
 const storeOwnersPhoneNumbers = [
-  '+27674533323', 
-  '+27674563542', 
-  '+27674563111', 
-  '+27674563222', 
-  '+27675099012', 
-  '+27787653542', 
-  '+27674511121', 
-  '+27674567777', 
-  '+27690900542', 
-  '+27832121223', 
+  "+27674533323",
+  "+27674563542",
+  "+27674563111",
+  "+27674563222",
+  "+27675099012",
+  "+27787653542",
+  "+27674511121",
+  "+27674567777",
+  "UKZN [Haward College]",
+  "DUT [Steve Biko]",
 ];
 // Create Fake Store Owners Profile Images.
 const storeOwnersProfileImages = [
-  'gs://alcoholic-expressions.appspot.com/store_owners/store_owners_images/+27674533323.jpg',
-  'gs://alcoholic-expressions.appspot.com/store_owners/store_owners_images/+27674563542.jpg',
-  'gs://alcoholic-expressions.appspot.com/store_owners/store_owners_images/+27674563111.jpg',
-  'gs://alcoholic-expressions.appspot.com/store_owners/store_owners_images/+27674563222.jpg',
-  'gs://alcoholic-expressions.appspot.com/store_owners/store_owners_images/+27675099012.jpg',
-  'gs://alcoholic-expressions.appspot.com/store_owners/store_owners_images/+27787653542.jpg',
-  'gs://alcoholic-expressions.appspot.com/store_owners/store_owners_images/+27674511121.jpg',
-  'gs://alcoholic-expressions.appspot.com/store_owners/store_owners_images/+27674567777.jpg',
-  'gs://alcoholic-expressions.appspot.com/store_owners/store_owners_images/+27690900542.jpg',
-  'gs://alcoholic-expressions.appspot.com/store_owners/store_owners_images/+27832121223.jpg',
+  "/store_owners/store_owners_images/+27674533323.jpg",
+  "/store_owners/store_owners_images/+27674563542.jpg",
+  "/store_owners/store_owners_images/+27674563111.jpg",
+  "/store_owners/store_owners_images/+27674563222.jpg",
+  "/store_owners/store_owners_images/+27675099012.jpg",
+  "/store_owners/store_owners_images/+27787653542.jpg",
+  "/store_owners/store_owners_images/+27674511121.jpg",
+  "/store_owners/store_owners_images/+27674567777.jpg",
+  "N/A",
+  "N/A",
 ];
 // Create Fake Store Owner Names.
 const storeOwnerFullnames = [
-  'Sandile James',
-  'Thandanani Lungelo',
-  'Sizwe',
-  'Vusimuzi',
-  'Sbongakonke Emmanual',
-  'Sihle',
-  'Mhlengi',
-  'Thabiso Innocent Njabulo',
-  'Busisiwe Candice',
-  'Zanene Angel',
+  "Sandile James",
+  "Thandanani Lungelo",
+  "Sizwe",
+  "Vusimuzi",
+  "Sbongakonke Emmanual",
+  "Sihle",
+  "Mhlengi",
+  "Thabiso Innocent Njabulo",
+  "N/A",
+  "N/A",
 ];
 // Create Fake Store Owner Names.
 const storeOwnerSurnames = [
-  'Mkhize',
-  'Zondi',
-  'Masango',
-  'Memela',
-  'Khanyile',
-  'Mbeje',
-  'Mazibuko',
-  'Mokoena',
-  'Sbisi',
-  'Khumalo',
+  "Mkhize",
+  "Zondi",
+  "Masango",
+  "Memela",
+  "Khanyile",
+  "Mbeje",
+  "Mazibuko",
+  "Mokoena",
+  "N/A",
+  "N/A",
 ];
 // Create Fake Identity Documents
 const identityDocuments = [
-  'gs://alcoholic-expressions.appspot.com/store_owners/store_owners_ids/+27674533323.jpg',
-  'gs://alcoholic-expressions.appspot.com/store_owners/store_owners_ids/+27674563542.jpg',
-  'gs://alcoholic-expressions.appspot.com/store_owners/store_owners_ids/+27674563111.jpg',
-  'gs://alcoholic-expressions.appspot.com/store_owners/store_owners_ids/+27674563222.jpg',
-  'gs://alcoholic-expressions.appspot.com/store_owners/store_owners_ids/+27675099012.jpg',
-  'gs://alcoholic-expressions.appspot.com/store_owners/store_owners_ids/+27787653542.jpg',
-  'gs://alcoholic-expressions.appspot.com/store_owners/store_owners_ids/+27674511121.jpg',
-  'gs://alcoholic-expressions.appspot.com/store_owners/store_owners_ids/+27674567777.jpg',
-  'gs://alcoholic-expressions.appspot.com/store_owners/store_owners_ids/+27690900542.jpg',
-  'gs://alcoholic-expressions.appspot.com/store_owners/store_owners_ids/+27832121223.jpg',
+  "/store_owners/store_owners_ids/+27674533323.jpg",
+  "/store_owners/store_owners_ids/+27674563542.jpg",
+  "/store_owners/store_owners_ids/+27674563111.jpg",
+  "/store_owners/store_owners_ids/+27674563222.jpg",
+  "/store_owners/store_owners_ids/+27675099012.jpg",
+  "/store_owners/store_owners_ids/+27787653542.jpg",
+  "/store_owners/store_owners_ids/+27674511121.jpg",
+  "/store_owners/store_owners_ids/+27674567777.jpg",
+  "N/A",
+  "N/A",
 ];
-//===========================================Create Stores Owners Data[End]===========================================
+// ===========================================Create Stores Owners Data[End]===========================================
 
-//==============================================Create Stores Data[Start]==============================================
+// ==============================================Create Stores Data[Start]==============================================
 // Create Fake Store Names.
 const storeNames = [
-  'Ka Nkuxa', 
-  'Ziyasha', 
-  '6 To 6', 
-  'Ka Msanga', 
-  'Emakhehleni',
-  'Ka Bhakabhaka', 
-  'Ka Mjey', 
-  'Lungelo\'s Tavern', 
-  'Sisonke Tavern',
-  'Emhosheni Tavern',
+  // Cato Crest
+  "Ka Nkuxa",
+  "Ziyasha",
+  "6 To 6", // 2
+
+  // Umlazi H
+  "Ka Msanga",
+  "Emakhehleni",
+  "Ka Bhakabhaka",
+  "Ka Mjey",
+  "Lungelo's Tavern", // 7
+
+  // Haward UKZN
+  "UKZN [Haward]", // 8
+
+  // DUT
+  "DUT [Steve Biko]", // 9
 ];
+
 // Create Fake Store Names
 const sectionNames = [
-  'Cato Crest-Mayville-Durban-Kwa Zulu Natal-South Africa',
-  'H Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
-  'M Section-Kwa Mashu-Durban-Kwa Zulu Natal-South Africa',
+  "Cato Crest-Mayville-Durban-Kwa Zulu Natal-South Africa", // 0
+  "Cato Manor-Mayville-Durban-Kwa Zulu Natal-South Africa",
+  "Dunbar-Mayville-Durban-Kwa Zulu Natal-South Africa",
+  "Masxha-Mayville-Durban-Kwa Zulu Natal-South Africa",
+  "Bonela-Mayville-Durban-Kwa Zulu Natal-South Africa",
+  "Sherwood-Mayville-Durban-Kwa Zulu Natal-South Africa",
+  "Richview-Mayville-Durban-Kwa Zulu Natal-South Africa",
+  "Nsimbini-Mayville-Durban-Kwa Zulu Natal-South Africa",
+  "Manor Gardens-Mayville-Durban-Kwa Zulu Natal-South Africa",
+
+  'A Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+  'AA Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+  'B Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
   'BB Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+  'C Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+  'CC Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+  'D Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+  'E Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+  'F Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+  'G Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+  'H Section-Umlazi-Durban-Kwa Zulu Natal-South Africa', // 19
+  'J Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+  'K Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+  'L Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+  'M Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+  'N Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+  'P Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+  'Q Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+  'R Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+  'S Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+  'U Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+  'V Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+  'W Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+  'Y Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
+  'Z Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
   'Malukazi-Umlazi-Durban-Kwa Zulu Natal-South Africa',
   'Philani-Umlazi-Durban-Kwa Zulu Natal-South Africa',
-  'K Section-Kwa Mashu-Durban-Kwa Zulu Natal-South Africa',
-  'West Street-Folweni-Durban-Kwa Zulu Natal-South Africa',
-  'AA Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
-  'V Section-Umlazi-Durban-Kwa Zulu Natal-South Africa',
-]
+  "MUT-Umlazi-Kwa Zulu Natal-South Africa",
+
+  "Haward College Campus-UKZN-Durban-Kwa Zulu Natal-South Africa", // 37
+  "Westville Campus-UKZN-Durban-Kwa Zulu Natal-South Africa",
+  "Edgewood Campus-UKZN-Pinetown-Kwa Zulu Natal-South Africa",
+
+  "Steve Biko Campus-DUT-Durban-Kwa Zulu Natal-South Africa", // 40
+
+];
 // Create Fake Store images.
 const storeImages = [
-  'gs://alcoholic-expressions.appspot.com/store_owners/stores_images/+27674533323.jpg',
-  'gs://alcoholic-expressions.appspot.com/store_owners/stores_images/+27674563542.jpg',
-  'gs://alcoholic-expressions.appspot.com/store_owners/stores_images/+27674563111.jpg',
-  'gs://alcoholic-expressions.appspot.com/store_owners/stores_images/+27674563222.jpg',
-  'gs://alcoholic-expressions.appspot.com/store_owners/stores_images/+27675099012.jpg',
-  'gs://alcoholic-expressions.appspot.com/store_owners/stores_images/+27787653542.jpg',
-  'gs://alcoholic-expressions.appspot.com/store_owners/stores_images/+27674511121.jpg',
-  'gs://alcoholic-expressions.appspot.com/store_owners/stores_images/+27674567777.jpg',
-  'gs://alcoholic-expressions.appspot.com/store_owners/stores_images/+27690900542.jpg',
-  'gs://alcoholic-expressions.appspot.com/store_owners/stores_images/+27832121223.jpg',
+  "/store_owners/stores_images/+27674533323.jpg",
+  "/store_owners/stores_images/+27674563542.jpg",
+  "/store_owners/stores_images/+27674563111.jpg",
+  "/store_owners/stores_images/+27674563222.jpg",
+  "/store_owners/stores_images/+27675099012.jpg",
+  "/store_owners/stores_images/+27787653542.jpg",
+  "/store_owners/stores_images/+27674511121.jpg",
+  "/store_owners/stores_images/+27674567777.jpg",
+  "/store_owners/stores_images/+27690900542.jpg", // Haward Image
+  "/store_owners/stores_images/+27832121223.jpg", // DUT Image
 ];
-//==============================================Create Stores Data[End]==============================================
+// ==============================================Create Stores Data[End]==============================================
 
-//========================================Create Draw Grand Prices Data[Start]========================================
+// ========================================Create Draw Grand Prices Data[Start]========================================
 // Outer Array Or Rows - Represent stores
 // Inner Array Or Columns - Represent store draws
 // Cells - Represent no of draw grand prices
-var fakeGrandPricesData = [
+const fakeGrandPricesData = [
   [4, 7, 5, 4, 6, 8, 7],
   [5, 8, 5],
   [4, 4, 8, 8, 6],
@@ -653,304 +1568,504 @@ var fakeGrandPricesData = [
   [],
   [4, 5, 5, 5, 8, 7, 7],
   [5, 7],
-  [4,],
-  []
+  [4],
+  [],
 ];
 
-// Create Fake Grand Prices Images
+// Create Fake Grand Prices Images 
 const grandPricesImages = [
-  'gs://alcoholic-expressions.appspot.com/grand_prices_images/Name-Savana#Qty-6#Vol-330ml.jpg',
-  'gs://alcoholic-expressions.appspot.com/grand_prices_images/Name-Castle#Qty-12#Vol-330ml.jpg',
-  'gs://alcoholic-expressions.appspot.com/grand_prices_images/Name-Sminnorf#Qty-12#Vol-750ml.jpg',
-  'gs://alcoholic-expressions.appspot.com/grand_prices_images/Name-Castle_Milk_Stout#Qty-6#Vol-500ml.jpg',
-  'gs://alcoholic-expressions.appspot.com/grand_prices_images/Name-Amstel_Light#Qty-6#Vol-330ml.jpg',
-  'gs://alcoholic-expressions.appspot.com/grand_prices_images/Name-Heineken#Qty-12#Vol-750ml.jpg',
-  'gs://alcoholic-expressions.appspot.com/grand_prices_images/Name-Castle_Milk_Stout#Qty-6#Vol-330ml.jpg',
-  'gs://alcoholic-expressions.appspot.com/grand_prices_images/Name-Castle#Qty-24#Vol-330ml.jpg',
-  'gs://alcoholic-expressions.appspot.com/grand_prices_images/Wines.jpg',
-  'gs://alcoholic-expressions.appspot.com/grand_prices_images/Name-Savana#Qty-24#Vol-360ml.jpg',
+  "/grand_prices_images/Name-Savana#Qty-6#Vol-330ml.jpg",
+  "/grand_prices_images/Name-Castle#Qty-12#Vol-330ml.jpg",
+  "/grand_prices_images/Name-Sminnorf#Qty-12#Vol-750ml.jpg",
+  "/grand_prices_images/Name-Castle_Milk_Stout#Qty-6#Vol-500ml.jpg",
+  "/grand_prices_images/Name-Amstel_Light#Qty-6#Vol-330ml.jpg",
+  "/grand_prices_images/Name-Heineken#Qty-12#Vol-750ml.jpg",
+  "/grand_prices_images/Name-Castle_Milk_Stout#Qty-6#Vol-330ml.jpg",
+  "/grand_prices_images/Name-Castle#Qty-24#Vol-330ml.jpg",
+  "/grand_prices_images/Wines.jpg",
+  "/grand_prices_images/Name-Savana#Qty-24#Vol-360ml.jpg",
 ];
 // Create Fake Grand Prices Descriptions
 const descriptions = [
-  'Savana 6x330ml',
-  'Castle 12x330ml',
-  'Sminnorf 12x750ml',
-  'Castle Milk Stout 6x500ml',
-  'Amstel Light 6x330ml',
-  'Heineken 12x750ml',
-  'Castle Milk Stout 6x330ml',
-  'Castle 24x330ml',
-  'Wines',
-  'Savana 24x360ml',
+  "Savana 6x330ml",
+  "Castle 12x330ml",
+  "Sminnorf 12x750ml",
+  "Castle Milk Stout 6x500ml",
+  "Amstel Light 6x330ml",
+  "Heineken 12x750ml",
+  "Castle Milk Stout 6x330ml",
+  "Castle 24x330ml",
+  "Wines",
+  "Savana 24x360ml",
 ];
 let imageAndDescriptionIndex;
-//========================================Create Draw Grand Prices Data[End]========================================
+// ========================================Create Draw Grand Prices Data[End]========================================
 
-//========================================Create Draw Competitors Data[Start]========================================
-const fakeDrawGroupCompetitorsNames = [
-  'Izinja Madoda',
-  'Abanqobi',
-  'Real Madrid',
-  'Abashayi Besinqa',
-  'Maxican',
-  'Amastorm',
-  'Las Vegas',
-  'Iringi',
-  'O-2room',
-  'O-1gal',
-  'Green Land',
-  'Abomayo'
+// ========================================Create Groups Data[Start]========================================
+const fakeGroupNames = [
+
+  // Cato Crest
+  "Izinja Madoda",
+  "Abanqobi",
+  "Real Madrid", // 2
+
+  // Umlazi H
+  "The Angels", 
+  "Sisonke",
+  "Maxican",
+  "Millionaires",
+  "Abathakathi",
+  "Iybotho",
+  "Rich Gang",
+  "Brazilians",
+  "Izichomane",
+  "MMM",
+  "Abathandazi",
+  "Abathwele",
+  "Geniuses",
+  "Nerds", // 16
+
+  // UKZN Haward
+  "Ezinemali",
+  "Omabuyengayanga", // 18
+
+  // DUT Durban Central
+  "Lucky Ones", //  19
 ];
 
 // Create Fake Grand Prices Images
-const fakeDrawGroupCompetitorsImages = [
-  'gs://alcoholic-expressions.appspot.com/group_competitors_images/Izinja-Madoda.jpg',
-  'gs://alcoholic-expressions.appspot.com/group_competitors_images/Abanqobi.jpg',
-  'gs://alcoholic-expressions.appspot.com/group_competitors_images/Real-Madrid.jpg',
-  'gs://alcoholic-expressions.appspot.com/group_competitors_images/Abashayi-Besinqa.jpg',
-  'gs://alcoholic-expressions.appspot.com/group_competitors_images/Maxican.jpg',
-  'gs://alcoholic-expressions.appspot.com/group_competitors_images/Amastorm.jpg',
-  'gs://alcoholic-expressions.appspot.com/group_competitors_images/Las-Vegas.jpg',
-  'gs://alcoholic-expressions.appspot.com/group_competitors_images/Iringi.jpg',
-  'gs://alcoholic-expressions.appspot.com/group_competitors_images/O-2room.jpg',
-  'gs://alcoholic-expressions.appspot.com/group_competitors_images/O-1gal.jpg',
-  'gs://alcoholic-expressions.appspot.com/group_competitors_images/Green-Land.jpg',
-  'gs://alcoholic-expressions.appspot.com/group_competitors_images/Abomayo.jpg',
+const fakeGroupImages = [
+  // Cato Crest
+  "/groups_specific_locations/+27848746350.jpg",
+  "/groups_specific_locations/+27848740000.jpg",
+  "/groups_specific_locations/+27765454543.jpg",
+
+  // Umlazi H
+  "/groups_specific_locations/+27732540986.jpg",
+  "/groups_specific_locations/+27812305870.jpg",
+  "/groups_specific_locations/+27657788900.jpg",
+  "/groups_specific_locations/+27842390870.jpg",
+  "/groups_specific_locations/+27863423400.jpg",
+  "/groups_specific_locations/+27656736820.jpg",
+  "/groups_specific_locations/+27781213455.jpg",
+  "/groups_specific_locations/+27621234765.jpg",
+  "/groups_specific_locations/+27638947650.jpg",
+  "/groups_specific_locations/+27672123097.jpg",
+  "/groups_specific_locations/+27832674900.jpg",
+  "/groups_specific_locations/+27642312958.jpg",
+  "/groups_specific_locations/+27672123090.jpg",
+  "/groups_specific_locations/+27732540980.jpg",
+  
+
+  // UKZN Haward
+  "/groups_specific_locations/+27848740212.jpg",
+  "/groups_specific_locations/+27848746456.jpg",
+
+  // DUT Durban Central
+  "/groups_specific_locations/+27811740113.jpg",
+
 ];
 
-// Outer Array Or Rows - Represent stores
-// Inner Array Or Columns - Represent store draws
-// Cells - Represent no of draw group competitors
-var fakeDrawGroupCompetitorsData = [
-  [7, 6, 1, 2, 19, 12, 10],
-  [4, 6, 7],
-  [4, 5, 8, 10, 3],
-  [4, 7, 4, 5, 2, 5, 2, 6, 8, 7],
-  [5, 8, 4, 5, 7, 5],
-  [1],
-  [4, 5, 1, 5, 8, 7, 7],
-  [1, 7],
-  [4],
-  [10],
+/* Each row represent a single group and
+the first element of that row is the creator's number. */
+const groupsMembers = [
+
+  // Cato Crest
+  ["+27765446353", "+27848746353", "+27848740000", "+27848746456", "+27668743000","+27811740113",],
+  ["+27744446350", "+27848743411", "+27848741215"],
+  ["+27765454543","+27625446353", "+27811740000", "+27788746350","+27848741333", "+27848744324", "+27625446322",],
+
+  // Umlazi H
+  ["+27732540986", "+27642312957",  "+27732540983", "+27657635413", "+27832553373", "+27642312954", "+27672123094", "+27832674904",],
+  ["+27812305870", "+27842390873", ],
+  ["+27657788900", "+27863423403", "+27787653549", ],
+  ["+27842390870", "+27832674901",  "+27674563118", "+27674511129", ],
+  ["+27863423400", "+27621234763", "+27674563548", ],
+  ["+27656736820", "+27657635412", "+27832553371", "+27674511128", "+27674533320", ],
+  ["+27781213455", "+27781213453", "+27674533328", ],
+  ["+27621234765", "+27674563220", "+27674563110", "+27832553374", "+27638947653", "+27674511120", "+27787653540", "+27675099010", "+27812305873", "+27674533329", "+27674563549", "+27674563119",  "+27674563540",],
+  ["+27638947650", "+27657788903", "+27787653548", ],
+  ["+27672123097", "+27832674903",  "+27656736823", ],
+  ["+27832674900", "+27672123093", ],
+  ["+27642312958", "+27732540983", "+27657635413", "+27674567778", "+27675099018", "+27674563228", "+27674567770", ],
+  ["+27672123090", "+27642312953", ],
+  ["+27732540980", "+27657635410", "+27832553370", "+27674563229", "+27675099019",],
+
+  // UKZN Haward
+  ["+27848740212", "+27657788909", "+27781213450", "+27621234760", 
+    "+27842390875", "+27638947652", "+27863423409", "+27656736829", 
+    "+27812305879", "+27731540981", "+27651635411",
+  ],
+  ["+27848746456", "+27831553371", "+27641312951", "+27672123091",
+    "+27832674902", "+27657788909", "+27781213452", "+27621234762",
+    "+27842390872", "+27638947653","+27863423403",
+  ],
+
+  // DUT Durban Central
+  ["+27811740113", "+27656736823", "+27812305873",], 
+
 ];
-//========================================Create Draw Competitors Data[End]========================================
+
+const groupsLocations = [
+  ["Cato Crest-Mayville-Durban-Kwa Zulu Natal-South Africa", "Ringini", "Stop 2", "Ko 2 Room", "E-Crash"],
+  ["H Section-Umlazi-Durban-Kwa Zulu Natal-South Africa", "Estez", "Bhorabhora", "E-Station", "Emarasteni"],
+  ["Haward College Campus-UKZN-Durban-Kwa Zulu Natal-South Africa", "Res 1", "Res 2", "Res 2", "Res 3"],
+  ["Steve Biko Campus-DUT-Durban-Kwa Zulu Natal-South Africa", "Res 1", "Res 2", "Res 2", "Res 3"],
+];
+
+// ========================================Create Groups Data[End]========================================
 
 // http://127.0.0.1:5001/alcoholic-expressions/us-central1/saveFakeAlcoholics
-export const saveFakeAlcoholics = onRequest(async (req, res)=>{
+// If your function should be openly available,set the cors policy to true.
+// region: ["us-west1", "us-east1"]}
+export const saveFakeAlcoholics = onRequest(
+  { cors: false },
+  async (req, res)=>{
+  let alcoholicDocReference;
+  for (let alcoholicIndex = 0; alcoholicIndex < alcoholicsPhoneNumbers.length; alcoholicIndex++) {
+    // Create a document reference in order to associate it id with the stores's id.
+    alcoholicDocReference = getFirestore()
+        .collection("alcoholics").doc(alcoholicsPhoneNumbers[alcoholicIndex]);
 
-  let alcoholicDocReference
-  for(let alcoholicIndex = 0; alcoholicIndex < alcoholicsPhoneNumbers.length; alcoholicIndex++){
+        let sectionName;
 
-      // Create a document reference in order to associate it id with the stores's id.
-      alcoholicDocReference = getFirestore()
-      .collection("alcoholics").doc(alcoholicsPhoneNumbers[alcoholicIndex]);
+        if(alcoholicIndex<20){
+          sectionName = sectionNames[0];
 
-      // Grab all parameters, then use them create a alcoholic object.
-      const alcoholic = {
-          phoneNumber:alcoholicDocReference.id,
-          profileImageURL:alcoholicsImages[alcoholicIndex],
-          sectionName:sectionNames[0],
-          username: alcoholicsUsernames[alcoholicIndex],
-      };
+        } else if(alcoholicIndex<84){
+          sectionName = sectionNames[19];
+        } else if(alcoholicIndex<104){
+          sectionName = sectionNames[37];
+        } else{
+          sectionName = sectionNames[40];
+        }
 
-      // Push the new alcoholic into Firestore using the Firebase Admin SDK.
-      await alcoholicDocReference.set(alcoholic);
+    // Grab all parameters, then use them create a alcoholic object.
+    const alcoholic = {
+      phoneNumber: alcoholicDocReference.id,
+      profileImageURL: alcoholicsImages[alcoholicIndex],
+      sectionName: sectionName,
+      username: alcoholicsUsernames[alcoholicIndex],
+      isFake: "Yes",
+    };
+
+    // Push the new alcoholic into Firestore using the Firebase Admin SDK.
+    await alcoholicDocReference.set(alcoholic);
   }
-  
+
 
   // Send back a message that we've successfully written the store
   res.json({result: `All Alcoholics Are Added And They Leave In Cato Crest.`});
 });
 
+// http://127.0.0.1:5001/alcoholic-expressions/us-central1/saveFakeGroups
+export const saveFakeGroups = onRequest(async (req, res)=>{
+  for (let groupIndex = 0; groupIndex < groupsMembers.length; groupIndex++) {
+    
+    let sectionName;
+    let groupLocationIndex;
+
+    if(groupIndex<3){
+      groupLocationIndex = 0;
+      sectionName = groupsLocations[groupLocationIndex][0];
+    }else if(groupIndex<17){
+      groupLocationIndex = 1;
+      sectionName = groupsLocations[groupLocationIndex][0];
+    }else if(groupIndex<19){
+      groupLocationIndex = 2;
+      sectionName = groupsLocations[groupLocationIndex][0];
+      
+    }else{
+      groupLocationIndex = 3;
+      sectionName = groupsLocations[groupLocationIndex][0];
+    }
+
+    const creatorPhoneNumber = groupsMembers[groupIndex][0];
+    const groupReference = getFirestore()
+        .collection("groups")
+        .doc(creatorPhoneNumber);
+
+    const group = {
+      groupName: fakeGroupNames[groupIndex],
+      groupImageURL: fakeGroupImages[groupIndex],
+      groupSectionName: sectionName,
+      groupSpecificArea: 
+        groupsLocations[groupLocationIndex][1 + Math.floor(Math.random()*4)],
+      groupCreatorImageURL: alcoholicsImages[groupIndex],
+      groupMembers: groupsMembers[groupIndex],
+      groupCreatorUsername: alcoholicsUsernames[groupIndex],
+      groupCreatorPhoneNumber: groupReference.id,
+      isActive: true,
+      maxNoOfMembers: 12, 
+      isFake: "Yes",
+    };
+
+    logger.log("Saving group ", groupReference.id);
+    await groupReference.set(group);
+  }
+
+  // Send back a message that we've successfully written the store
+  res.json({result: `All Groups Are Added.`});
+});
+
+// http://127.0.0.1:5001/alcoholic-expressions/us-central1/createFakeStoreOwners
+export const createFakeStoreOwners = onRequest(async (req, res) => {
+  let storeOwnerDocReference;
+
+  for (let storeOwnerIndex = 0; storeOwnerIndex < storeOwnersPhoneNumbers.length; storeOwnerIndex++) {
+    
+    // Haward & DUT do not have store owner.
+    if(storeOwnerIndex<8){
+      // Create a document reference in order to associate it id with the stores's id.
+    storeOwnerDocReference = getFirestore()
+    .collection("store_owners").doc(storeOwnersPhoneNumbers[storeOwnerIndex]);
+
+    const storeOwner = {
+      phoneNumber: storeOwnersPhoneNumbers[storeOwnerIndex],
+      profileImageURL: storeOwnersProfileImages[storeOwnerIndex],
+      fullname: storeOwnerFullnames[storeOwnerIndex],
+      surname: storeOwnerSurnames[storeOwnerIndex],
+      identityDocumentImageURL: identityDocuments[storeOwnerIndex],
+      isAdmin: storeOwnerIndex==0,
+      isFake: "Yes",
+    };
+
+    await storeOwnerDocReference.set(storeOwner);
+    }
+    
+  }
+  res.json({result: `All Store Owners Added Successfully`});
+});
+
 // http://127.0.0.1:5001/alcoholic-expressions/us-central1/saveFakeStore
 export const saveFakeStores = onRequest(async (req, res)=>{
-
   let storeDocReference;
 
-  for(let storeIndex = 0; storeIndex < storeNames.length; storeIndex++){
+  let storeDrawId;
+  let storeDraw;
+  let storeDrawReference;
+
+  const justNow = new Date();
+
+  for (let storeIndex = 0; storeIndex < storeNames.length; storeIndex++) {
   // Create a document reference in order to associate it id with the stores's id.
-  storeDocReference = getFirestore()
-  .collection("stores").doc(storeOwnersPhoneNumbers[storeIndex]);
+    storeDocReference = getFirestore()
+        .collection("stores").doc(storeOwnersPhoneNumbers[storeIndex]);
 
-  // Grab all parameters, then use them create a store object.
-  const store = {
-      storeOwnerPhoneNumber:storeOwnersPhoneNumbers[storeIndex],
-      storeName:storeNames[storeIndex],
-      storeImageURL:storeImages[storeIndex],
-      sectionName:sectionNames[storeIndex],
-      isFake: 'Yes',
-      lastWonPrice:null,
-  };
+      let groupLocationIndex;
+      if(storeIndex<=2){
+        groupLocationIndex = 0;
+      } else if(storeIndex<=7){
+        groupLocationIndex = 1;
+      }
+      else if(storeIndex==8){
+        groupLocationIndex = 2;
+      }else{
+        groupLocationIndex = 3;
+      }
 
-  // Push the new store into Firestore using the Firebase Admin SDK.
-  await storeDocReference.set(store);
+    // Grab all parameters, then use them create a store object.
+    const store = {
+      storeOwnerPhoneNumber: storeOwnersPhoneNumbers[storeIndex],
+      storeName: storeNames[storeIndex],
+      storeImageURL: storeImages[storeIndex],
+      sectionName: groupsLocations[groupLocationIndex][0],
+      isFake: "Yes",
+      lastWonPrice: null,
+      storeArea: groupsLocations[groupLocationIndex]
+      [Math.floor(Math.random()*groupsLocations[groupLocationIndex].length)],
+    };
+
+    // Push the new store into Firestore using the Firebase Admin SDK.
+    await storeDocReference.set(store);
+
+    // Create a certain number of store draws.
+    for (let storeDrawNo = 0; storeDrawNo < fakeGrandPricesData[storeIndex].length; storeDrawNo++) {
+      // Point where to save a store draw.
+      storeDrawReference = getFirestore()
+          .collection("/stores/").doc(storeOwnersPhoneNumbers[storeIndex])
+          .collection("/store_draws/")
+          .doc();
+
+      // storeDrawId = `${storeNames[storeIndex]} ${justNow.getDate()}-${justNow.getMonth()+1}-${justNow.getFullYear()} ${justNow.getHours()+2}:${justNow.getMinutes()+3} [${storeDrawFK}]`;
+      storeDrawId = storeDrawReference.id;
+
+      // Create a single store draw.
+      storeDraw = {
+        isFake: "Yes",
+        storeDrawId: storeDrawId,
+        storeFK: storeOwnersPhoneNumbers[storeIndex],
+        drawDateAndTime: {
+          "year": justNow.getFullYear() - 1,
+          "month": justNow.getMonth() +1, // 1-12
+          "day": justNow.getDate(),
+          "hour": justNow.getHours() +2, // GMT
+          "minute": justNow.getMinutes(),
+        },
+        joiningFee: Math.floor(Math.random()*2),
+        numberOfGrandPrices: fakeGrandPricesData[storeIndex][storeDrawNo],
+        isOpen: false,
+        storeName: storeNames[storeIndex],
+        storeImageURL: storeImages[storeIndex],
+        sectionName: store.sectionName,
+        // remainingTime: 300, // 5 minute which is 300 seconds
+        // isRemainingTimeVisible: false,
+      };
+
+
+      // Save a store draw into the database.
+      await storeDrawReference.set(storeDraw);
+
+      let drawGrandPrice;
+      let drawGrandPriceReference;
+
+      // Create grand prices for a particular store draw.
+      for (let grandPriceNo = 0; grandPriceNo < storeDraw.numberOfGrandPrices; grandPriceNo++) {
+        imageAndDescriptionIndex = Math.floor(Math.random()*grandPricesImages.length);
+
+        // Point where to save a store draw grand price.
+        drawGrandPriceReference = getFirestore()
+            .collection("stores").doc(storeOwnersPhoneNumbers[storeIndex])
+            .collection("store_draws").doc(storeDrawId)
+            .collection("draw_grand_prices").doc();
+
+        // Create a grand price
+        drawGrandPrice = {
+          isFake: "Yes",
+          grandPriceId: drawGrandPriceReference.id,
+          storeDrawFK: storeDrawId,
+          description: descriptions[imageAndDescriptionIndex],
+          imageURL: grandPricesImages[imageAndDescriptionIndex],
+          grandPriceIndex: grandPriceNo,
+        };
+
+        // Save a draw grand price
+        await drawGrandPriceReference.set(drawGrandPrice);
+      }
+
+      let drawGroupCompetitor;
+      let drawGroupCompetitorReference;
+
+      // Create draw group competitors for a particular store draw.
+      // Note: group members may belong in more than one group which is not allowed in production.
+      for (let groupCompetitorNo = 0; groupCompetitorNo < storeDraw.numberOfGroupCompetitorsSoFar; groupCompetitorNo++) {
+        const alcoholicsPhoneNumbersCopy = [];
+        for (let i = 0; i < alcoholicsPhoneNumbers.length; i++) {
+          alcoholicsPhoneNumbersCopy.push(alcoholicsPhoneNumbers[i]);
+        }
+
+        shuffle(alcoholicsPhoneNumbersCopy);
+
+        const groupMembers = [];
+        const totalNoOfGroupMembers = 1 + Math.floor(Math.random()*alcoholicsPhoneNumbersCopy.length);
+        for (let groupMemberNumber = 0; groupMemberNumber <totalNoOfGroupMembers; groupMemberNumber++) {
+          groupMembers.push(alcoholicsPhoneNumbersCopy[groupMemberNumber]);
+        }
+
+        // Point where to save a store draw competitor.
+        drawGroupCompetitorReference = getFirestore()
+            .collection("/stores/").doc(`${storeOwnersPhoneNumbers[storeIndex]}`)
+            .collection("/store_draws/").doc(`${storeDrawId}`)
+            .collection("/draw_groups_competitors/").doc();
+
+        const pickedGroupIndex = Math.floor(
+            Math.random()*fakeDrawGroupCompetitorsNames.length);
+        const pickedGroupCreator = Math.floor(
+            Math.random()*alcoholicsPhoneNumbers.length);
+        const groupSpecificLocations =
+          ["Ringini", "Ko 1Room", "Ko 2Room", "Stop 1"];
+        const groupSpecificLocationIndex = Math.floor(
+            Math.random()*groupSpecificLocations.length);
+
+        // Create a draw competitor;
+        drawGroupCompetitor = {
+          "groupCompetitorId": drawGroupCompetitorReference.id,
+          "storeDrawFK": storeDrawId,
+          "groupImageURL": fakeDrawGroupCompetitorsImages[pickedGroupIndex],
+          "creatorUsername": alcoholicsUsernames[pickedGroupCreator],
+          "creatorId": alcoholicsPhoneNumbers[pickedGroupCreator],
+          "groupName": fakeDrawGroupCompetitorsNames[pickedGroupIndex],
+          "groupNumber": groupCompetitorNo,
+          "groupSpecificLocation": groupSpecificLocations[groupSpecificLocationIndex],
+          "groupSectionName": sectionNames[0],
+          "groupMembers": groupMembers,
+        };
+
+        // Save draw competitor into the database.
+        await drawGroupCompetitorReference.set(drawGroupCompetitor);
+      }
+    }
   }
   // Send back a message that we've successfully written the store
   res.json({result: `All Fake Stores Added Successfully.`});
   // [END adminSdkAdd]
 });
 
-// http://127.0.0.1:5001/alcoholic-expressions/us-central1/createFakeStoreOwners
-export const createFakeStoreOwners = onRequest(async (req, res) => {
 
-  let storeOwnerDocReference;
+// http://127.0.0.1:5001/alcoholic-expressions/us-central1/createFakeComments/
+export const createFakeComments = onRequest(async (req, res)=>{
+  getFirestore()
+      .collection("won_prices_summaries")
+      .onSnapshot((wonPricesSummarySnapshop)=>{
+        wonPricesSummarySnapshop.docs.forEach(async (wonPriceSummaryDoc)=>{
+          if (wonPriceSummaryDoc.exists) {
+            const noOfComments = Math.floor(Math.random()*20);
 
-  for(let storeOwnerIndex = 0; storeOwnerIndex < storeOwnersPhoneNumbers.length; storeOwnerIndex++){
-      // Create a document reference in order to associate it id with the stores's id.
-      storeOwnerDocReference = getFirestore()
-      .collection("store_owners").doc(storeOwnersPhoneNumbers[storeOwnerIndex]);
+            for (let commentNo = 0; commentNo < noOfComments; commentNo++) {
+              const commentRerence = wonPriceSummaryDoc
+                  .ref.collection("comments").doc();
 
-      const storeOwner =  {
-          phoneNumber: storeOwnersPhoneNumbers[storeOwnerIndex],
-          profileImageURL: storeOwnersProfileImages[storeOwnerIndex],
-          fullname: storeOwnerFullnames[storeOwnerIndex],
-          surname: storeOwnerSurnames[storeOwnerIndex],
-          identityDocumentImageURL: identityDocuments[storeOwnerIndex],
-          isAdmin: storeOwnerIndex==0,
-      };
+              const end = 10 + Math.floor(Math.random()*(commentsSource.length-10));
+              const start = Math.floor(Math.random()*(end));
+              const creatorIndex = Math.floor(Math.random()*alcoholicsPhoneNumbers.length);
 
-      await storeOwnerDocReference.set(storeOwner);
-  }
-  res.json({result: `All Store Owners Added Successfully`});
+              const wonPriceSummaryComment = {
+                commentId: wonPriceSummaryDoc.id,
+                wonPriceSummaryFK: wonPriceSummaryDoc.data().wonPriceSummaryId,
+                message: commentsSource.substring(start, end),
+                creatorImageURL: alcoholicsImages[creatorIndex],
+                creatorUsername: alcoholicsUsernames[creatorIndex],
+                creatorFK: alcoholicsPhoneNumbers[creatorIndex],
+                dateCreated: {
+                  year: 2024,
+                  month: 10,
+                  day: 1 + Math.floor(Math.random()*28),
+                  hour: Math.floor(Math.random()*24),
+                  minute: Math.floor(Math.random()*60),
+                },
+                isFake: "Yes",
+              };
+
+              await commentRerence.set(wonPriceSummaryComment);
+            }
+          }
+        });
+      });
+
+  res.json({result: `Done Saving Fake Won Prices Summaries Comments.`});
 });
 
-// http://127.0.0.1:5001/alcoholic-expressions/us-central1/createFakeStoreDraws?storeIndex=0
-export const createFakeStoreDraws = onRequest(async (req, res) =>{
-
-  const storeIndex = req.query.storeIndex;
-  let storeDrawId;
-  
-
-  let storeDraw;
-  let storeDrawReference;
-
-  const justNow = new Date();
-
-  // Create a certain number of store draws.
-  for(var storeDrawNo = 0; storeDrawNo < fakeGrandPricesData[storeIndex].length;storeDrawNo++){
-
-    // Point where to save a store draw.
-    storeDrawReference = getFirestore()
-    .collection("/stores/").doc(storeOwnersPhoneNumbers[storeIndex])
-    .collection("/store_draws/")
-    .doc();
-
-    //storeDrawId = `${storeNames[storeIndex]} ${justNow.getDate()}-${justNow.getMonth()+1}-${justNow.getFullYear()} ${justNow.getHours()+2}:${justNow.getMinutes()+3} [${storeDrawFK}]`;
-    storeDrawId = storeDrawReference.id;
-    
-    // Create a single store draw.
-    storeDraw = {
-        isFake: 'Yes',
-        storeDrawId: storeDrawId,
-        storeFK: storeOwnersPhoneNumbers[storeIndex],
-        drawDateAndTime: {
-            'year':justNow.getFullYear() - 1, 
-            'month':justNow.getMonth() +1, // 1-12
-            'day':justNow.getDate(), 
-            'hour':justNow.getHours() +2, // GMT
-            'minute': justNow.getMinutes(),
-        },
-        joiningFee: Math.floor(Math.random()*2),
-        numberOfGrandPrices: fakeGrandPricesData[storeIndex][storeDrawNo],
-        numberOfGroupCompetitorsSoFar: fakeDrawGroupCompetitorsData[storeIndex][storeDrawNo],
-        isOpen: false,
-        storeName: storeNames[storeIndex],
-        storeImageURL: storeImages[storeIndex],
-        sectionName: sectionNames[storeIndex],
-        remainingTime: 300, // 5 minute which is 300 seconds
-        isRemainingTimeVisible: false,
-    };
-
-    
-    // Save a store draw into the database.
-    await storeDrawReference.set(storeDraw);
-
-    let drawGrandPrice;
-    let drawGrandPriceReference;
-
-    // Create grand prices for a particular store draw.
-    for(var grandPriceNo = 0; grandPriceNo < storeDraw.numberOfGrandPrices;grandPriceNo++){
-
-        imageAndDescriptionIndex = Math.floor(Math.random()*grandPricesImages.length);
-
-        // Point where to save a store draw grand price.
-        drawGrandPriceReference = getFirestore()
-        .collection("stores").doc(storeOwnersPhoneNumbers[storeIndex])
-        .collection("store_draws").doc(storeDrawId)
-        .collection("draw_grand_prices").doc();
-
-        // Create a grand price
-        drawGrandPrice = {
-            isFake: 'Yes',
-            grandPriceId: drawGrandPriceReference.id,
-            storeDrawFK: storeDrawId,
-            description: descriptions[imageAndDescriptionIndex],
-            imageURL: grandPricesImages[imageAndDescriptionIndex],
-            grandPriceIndex: grandPriceNo,
-        };
-
-        // Save a draw grand price
-        await drawGrandPriceReference.set(drawGrandPrice);
-    }
-
-    let drawGroupCompetitor;
-    let drawGroupCompetitorReference;
-
-    // Create draw group competitors for a particular store draw. 
-    // Note: group members may belong in more than one group which is not allowed in production.
-    for(var groupCompetitorNo = 0; groupCompetitorNo < storeDraw.numberOfGroupCompetitorsSoFar;groupCompetitorNo++){
-
-
-        let alcoholicsPhoneNumbersCopy = [];
-        for(let i = 0; i < alcoholicsPhoneNumbers.length;i++){
-          alcoholicsPhoneNumbersCopy.push(alcoholicsPhoneNumbers[i]);
-        }
-        
-        shuffle(alcoholicsPhoneNumbersCopy);
-
-        const groupMembers = [];
-        const totalNoOfGroupMembers = 1 + Math.floor(Math.random()*alcoholicsPhoneNumbersCopy.length);
-        for(let groupMemberNumber = 0; groupMemberNumber <totalNoOfGroupMembers;groupMemberNumber++){
-          groupMembers.push(alcoholicsPhoneNumbersCopy[groupMemberNumber]);
-        }
-
-        // Point where to save a store draw competitor.
-        drawGroupCompetitorReference = getFirestore()
-        .collection('/stores/').doc(`${storeOwnersPhoneNumbers[storeIndex]}`)
-        .collection('/store_draws/').doc(`${storeDrawId}`)
-        .collection('/draw_groups_competitors/').doc(); 
-
-        const pickedGroupIndex = Math.floor(
-          Math.random()*fakeDrawGroupCompetitorsNames.length);
-        const pickedGroupCreator = Math.floor(
-          Math.random()*alcoholicsPhoneNumbers.length);
-        const groupSpecificLocations = 
-        ['Ringini', 'Ko 1Room', 'Ko 2Room', 'Stop 1' ];
-        const groupSpecificLocationIndex = Math.floor(
-          Math.random()*groupSpecificLocations.length);
-        
-        // Create a draw competitor;
-        drawGroupCompetitor = {
-            'groupCompetitorId': drawGroupCompetitorReference.id,
-            'storeDrawFK': storeDrawId,
-            'groupImageURL': fakeDrawGroupCompetitorsImages[pickedGroupIndex],
-            'creatorUsername': alcoholicsUsernames[pickedGroupCreator],
-            'creatorId': alcoholicsPhoneNumbers[pickedGroupCreator],
-            'groupName': fakeDrawGroupCompetitorsNames[pickedGroupIndex],
-            'groupNumber': groupCompetitorNo,
-            'groupSpecificLocation': groupSpecificLocations[groupSpecificLocationIndex],
-            'groupSectionName' : sectionNames[0],
-            'groupMembers': groupMembers,
-        };
-
-        // Save draw competitor into the database.
-        await drawGroupCompetitorReference.set(drawGroupCompetitor);
-    }
-  }
-      
-  res.json({result: `Done Saving Fake Store Draws.`});
-
-});
+const commentsSource =
+"JavaScript has become the standard for creating dynamic user interfaces";
+"for the web. Pretty much any time you visit a web page with animation, live";
+"data, a button that changes when you hover over it, or a drop‐down menu,";
+"JavaScript is at work. Because of its power and ability to run in any web";
+"browser, JavaScript coding is the most popular and necessary skill for a";
+"modern web developer to have. Keep in mind that programming languages were ";
+"created in order to give people a simple way to talk to computers and tell ";
+"them what to do. Compared with machine language, the language that the ";
+"computer’s CPU speaks, every programming language is easy and understandable. ";
+"To give right as the program is being run. Programmers who write interpreted ";
+"languages don’t need to go through the step of compiling their code prior to ";
+"handing it off to the computer to run. The benefit of programming in an interpreted ";
+"language is that it’s easy to make changes to the program at any time. The downside, ";
+"however, is that compiling code as it’s being run creates another step in the process ";
+"and can slow down the performance of programs.Partially because of this performance ";
+"factor, interpreted languages have gotten a reputation for being less than serious ";
+"programming languages. However, because of better just‐in‐time compilers and faster ";
+"computer processors, this perception is rapidly changing. JavaScript is having a big ";
+"impact in this regard. Examples of interpreted programming languages include PHP, Perl, ";
+"Haskell, Ruby and of course, JavaScript";
 
 // ########################################Development Functions [End]#######################################################
 

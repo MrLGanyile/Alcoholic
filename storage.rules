@@ -24,13 +24,13 @@ service firebase.storage {
     }
 
     // Done Unit Testing, Except For The Update Operation.
-    match /store_owners/stores_images/{storeImageId} {
+    match /store_owners/stores_images/{storeImage} {
       
       //Only unregistered users can create a store image during registration. 
       allow create: if request.auth != null && 
 
       // Make sure authenticated user's uid is the same as the document id of this image.
-      request.auth.uid == storeImageId &&
+      request.auth.uid == storeImage &&
 
       // Make sure a store whose owner has a phone number which is the same as this document id does not alredy exist.
       firestore.exists(/databases/(default)/documents/stores/
@@ -49,13 +49,13 @@ service firebase.storage {
     }
 
     // Done Unit Testing, Except For The Update Operation.
-    match /store_owners/store_owners_images/{storeOwnerImageId} {
+    match /store_owners/store_owners_images/{storeOwnerImage} {
 
       // Only unregistered users can create a store owner image during store registration.
       allow create: if request.auth != null && 
 
       // Make sure authenticated user's uid is the same as the document id of this image.
-      request.auth.uid == storeOwnerImageId &&
+      request.auth.uid == storeOwnerImage &&
 
       // Make sure the store already exist whereas the store owner with the same phone number isn't.
       firestore.exists(/databases/(default)/documents/stores/
@@ -74,14 +74,12 @@ service firebase.storage {
     }
 
     // Done Unit Testing, Except For The Update Operation.
-    match /store_owners/store_owners_ids/{storeOwnerIdentityDocumentId} {
+    match /store_owners/store_owners_ids/{storeOwnerIdentityDocument} {
 
-      // Store owners can only create or update their identity documents
-      // which also have acceptable size and format.
       allow create: if request.auth != null && 
 
       // Make sure authenticated user's uid is the same as the document id of this image.
-      request.auth.uid == storeOwnerIdentityDocumentId &&
+      request.auth.uid == storeOwnerIdentityDocument &&
 
       // Make sure the store already exist whereas the store owner with the same phone number isn't.
       firestore.exists(/databases/(default)/documents/stores/
@@ -93,7 +91,7 @@ service firebase.storage {
       //isValidContentType(request.resource);
 
       allow read: if request.auth.uid != null &&
-      (request.auth.uid==storeOwnerIdentityDocumentId ||
+      (request.auth.uid==storeOwnerIdentityDocument ||
       firestore.get(/databases/(default)/documents/store_owners/
       $(request.auth.uid)).data.isAdmin
       );
@@ -119,16 +117,13 @@ service firebase.storage {
       allow update, delete: if false;
     }
     
-    // Usecase Name - Create Alcoholic Account
     // Done Unit Testing, Except For The Update Operation.
-    match /alcoholics/profile_images/{profileImageId} {
+    match /alcoholics/profile_images/{profileImage} {
 
-      // Store owners can only create or update their images
-      // which also have acceptable size and format.
       allow create: if request.auth != null && 
 
       // Make sure authenticated user's uid is the same as the document id of this image.
-      request.auth.uid == profileImageId &&
+      request.auth.uid == profileImage &&
 
       // Make sure there is no user already using the new user's phone number.
       firestore.exists(/databases/(default)/documents/alcoholics/
@@ -144,6 +139,35 @@ service firebase.storage {
       // No one can delete a store owner image.
       allow update, delete: if false;
       
+    }
+
+    match /groups_specific_locations/{locationImage} {
+
+      // Make sure the user is authenticated.
+      allow create: if request.auth != null && 
+
+      // Make sure authenticated user's uid is the same as the document id of this image.
+      request.auth.uid == locationImage &&
+
+      // Make sure the current user does not have an existing group.
+      firestore.exists(/databases/(default)/documents/groups/
+      $(request.auth.uid))==false &&
+      
+      isValidFileSize(request.resource);// && 
+      //isValidContentType(request.resource);
+
+      allow read; // Anybody can view  store owners images.
+
+      // No one can delete a store owner image.
+      allow update, delete: if false;
+      
+    }
+
+    match /group_members/{creatorPhoneNumber}/{memberPhoneNumber} {
+      //allow read;
+      allow list;
+      allow get;
+      allow write;
     }
 
   }
