@@ -5,6 +5,7 @@ import '../../main.dart';
 import '../models/Utilities/converter.dart';
 import '../models/social/group.dart';
 import 'dart:developer' as debug;
+import 'dart:math';
 
 class SingleGroupWidget extends StatefulWidget {
   Group competitorsGroup;
@@ -330,7 +331,7 @@ class SingleGroupWidgetState extends State<SingleGroupWidget> {
                                     builder: (context, snapshot) {
                                       if (snapshot.hasData) {
                                         final data = snapshot.data as String;
-                                        debug.log(data);
+
                                         return CircleAvatar(
                                           radius: 40,
                                           backgroundImage: NetworkImage(data),
@@ -383,7 +384,7 @@ class SingleGroupWidgetState extends State<SingleGroupWidget> {
                             builder: (context, snapshot) {
                               if (snapshot.hasData) {
                                 final data = snapshot.data as String;
-                                debug.log(data);
+
                                 return retrieveGroupImage(context, data);
                               } else if (snapshot.hasError) {
                                 debug.log(
@@ -412,8 +413,22 @@ class SingleGroupWidgetState extends State<SingleGroupWidget> {
               builder: (context, snapshot) {
                 if (snapshot.hasData) {
                   ListResult allDownloadURLs = snapshot.data! as ListResult;
-                  groupMembersImageReferences = allDownloadURLs.items;
-                  debug.log(allDownloadURLs.items.toString());
+
+                  if (allDownloadURLs.items.length > 12) {
+                    List<Reference> falseImagesReferences = [];
+                    int randomStartIndex =
+                        Random().nextInt(allDownloadURLs.items.length - 12);
+                    int randomNumberOfGroupMembers = 1 + Random().nextInt(12);
+
+                    for (int index = randomStartIndex;
+                        index < randomStartIndex + randomNumberOfGroupMembers;
+                        index++) {
+                      falseImagesReferences.add(allDownloadURLs.items[index]);
+                    }
+                    groupMembersImageReferences = falseImagesReferences;
+                  } else {
+                    groupMembersImageReferences = allDownloadURLs.items;
+                  }
 
                   return createGroupMembers(context);
                 } else if (snapshot.hasError) {

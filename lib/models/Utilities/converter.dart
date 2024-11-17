@@ -1,6 +1,33 @@
 import '../section_name.dart';
+import '../stores/store_draw_state.dart';
 
 class Converter {
+  static StoreDrawState toStoreDrawState(String state) {
+    switch (state) {
+      case "converted-to-competition":
+        return StoreDrawState.convertedToCompetition;
+      case "playing-competition":
+        return StoreDrawState.playingCompetition;
+      case "competition-finished":
+        return StoreDrawState.competitionFinished;
+      default:
+        return StoreDrawState.notConvertedToCompetition;
+    }
+  }
+
+  static String fromStoreDrawStateToString(StoreDrawState storeDrawState) {
+    switch (storeDrawState) {
+      case StoreDrawState.convertedToCompetition:
+        return "converted-to-competition";
+      case StoreDrawState.playingCompetition:
+        return "playing-competition";
+      case StoreDrawState.competitionFinished:
+        return "competition-finished";
+      default:
+        return "not-converted-to-competition";
+    }
+  }
+
   // Convert any section string to a section name constant.
   static SectionName toSectionName(String section) {
     switch (section) {

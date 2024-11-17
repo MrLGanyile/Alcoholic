@@ -1,3 +1,4 @@
+import 'package:alcoholic/for_testing_purposes/tracking_rem_time_widget.dart';
 import 'package:flutter/material.dart';
 
 import '../main.dart';
@@ -19,16 +20,21 @@ class _ShowoffScreenState extends State<ShowoffScreen> {
 
   @override
   Widget build(BuildContext context) => Container(
-      decoration: BoxDecoration(
-        color: MyApplication.logoColor2,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(30),
-          topRight: Radius.circular(30),
+        decoration: BoxDecoration(
+          color: MyApplication.logoColor2,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(30),
+            topRight: Radius.circular(30),
+          ),
         ),
-      ),
-      child: const Center(
-          child: Text('Showoff Screen',
-              style: TextStyle(
-                fontSize: 50,
-              ))));
+        child: Center(
+          child: /*Text(
+            'Showoff Screen',
+            style: TextStyle(
+              fontSize: 50,
+            ),
+          ), */
+              TrackingRemTimeWidget(),
+        ),
+      );
 }

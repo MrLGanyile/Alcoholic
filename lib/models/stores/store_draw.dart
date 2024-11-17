@@ -2,20 +2,20 @@
 import 'package:alcoholic/models/Utilities/may_be_fake.dart';
 import 'package:alcoholic/models/stores/store_draw_state.dart';
 
+import '../Utilities/converter.dart';
 import '../section_name.dart';
 
 class StoreDraw extends MayBeFake {
   String storeDrawId;
   String storeFK;
   DateTime drawDateAndTime;
-  double joiningFee;
-  int numberOfGroupCompetitorsSoFar;
+
   bool isOpen;
   int numberOfGrandPrices;
   String storeName;
   String storeImageURL;
   SectionName sectionName;
-  StoreDrawState storeDrawState; // new
+  StoreDrawState? storeDrawState;
 
   // Contains A Sub Collection Of Draw Grand Prices
   // Contains A Sub Collection Of Draw Competitors
@@ -24,14 +24,12 @@ class StoreDraw extends MayBeFake {
     required this.storeDrawId,
     required this.storeFK,
     required this.drawDateAndTime,
-    required this.joiningFee,
-    required this.numberOfGroupCompetitorsSoFar,
     this.isOpen = true,
     required this.numberOfGrandPrices,
     required this.storeName,
     required this.storeImageURL,
     required this.sectionName,
-    this.storeDrawState = StoreDrawState.isComming,
+    this.storeDrawState = StoreDrawState.notConvertedToCompetition,
     isFake,
   }) : super(isFake: isFake);
 
@@ -48,13 +46,12 @@ class StoreDraw extends MayBeFake {
         'hour': drawDateAndTime.hour,
         'minute': drawDateAndTime.minute,
       },
-      'joiningFee': joiningFee,
       'numberOfGrandPrices': numberOfGrandPrices,
-      'numberOfGroupCompetitorsSoFar': numberOfGroupCompetitorsSoFar,
       'isOpen': isOpen,
       'storeName': storeName,
       'storeImageURL': storeImageURL,
       'sectionName': sectionName,
+      'storeDrawState': Converter.fromStoreDrawStateToString(storeDrawState!),
     });
     return map;
   }
@@ -69,13 +66,11 @@ class StoreDraw extends MayBeFake {
         json['drawDateAndTime']['hour'],
         json['drawDateAndTime']['minute'],
       ),
-      joiningFee: json['joiningFee'],
       numberOfGrandPrices: json['numberOfGrandPrices'],
-      numberOfGroupCompetitorsSoFar: json['numberOfGroupCompetitorsSoFar'],
       isOpen: json['isOpen'],
       storeName: json['storeName'],
       storeImageURL: json['storeImageURL'],
-      sectionName: json['sectionName'],
-      storeDrawState: json['storeDrawState'],
+      sectionName: Converter.toSectionName(json['sectionName']),
+      storeDrawState: Converter.toStoreDrawState(json['storeDrawState']),
       isFake: json['isFake'] == 'Yes' ? true : false);
 }

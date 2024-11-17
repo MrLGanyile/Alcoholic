@@ -22,23 +22,24 @@ class DrawGrandPrice extends MayBeFake {
     Map<String, dynamic> map = super.toJson();
 
     map.addAll({
-      'Grand Price Id': grandPriceId,
-      'Store Draw FK': storeDrawFK,
-      'Description': description,
-      'Image URL': imageURL,
-      'Grand Price Index': grandPriceIndex,
+      'grandPriceId': grandPriceId,
+      'toreDrawFK': storeDrawFK,
+      'description': description,
+      'imageURL': imageURL,
+      'grandPriceIndex': grandPriceIndex,
+      'isFake': "No",
     });
     return map;
   }
 
   factory DrawGrandPrice.fromJson(dynamic json) {
     return DrawGrandPrice(
-        grandPriceId: json['Grand Price Id'],
-        storeDrawFK: json['Store Draw FK'],
-        description: json['Description'],
-        imageURL: json['Image URL'],
-        grandPriceIndex: json['Grand Price Index'],
-        isFake: json['Is Fake'] == 'Yes' ? true : false);
+        grandPriceId: json['grandPriceId'],
+        storeDrawFK: json['storeDrawFK'],
+        description: json['description'],
+        imageURL: json['imageURL'],
+        grandPriceIndex: json['grandPriceIndex'],
+        isFake: json['isFake'] == 'Yes' ? true : false);
   }
 
   @override

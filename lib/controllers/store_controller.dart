@@ -195,9 +195,7 @@ class StoreController extends GetxController {
         storeDrawId: reference.id,
         storeFK: storeFK,
         drawDateAndTime: drawDateAndTime,
-        joiningFee: joiningFee,
         numberOfGrandPrices: drawGrandPrices.length,
-        numberOfGroupCompetitorsSoFar: numberOfGroupCompetitorsSoFar,
         storeName: storeName,
         storeImageURL: storeImageURL,
         sectionName: sectionName,
@@ -214,14 +212,21 @@ class StoreController extends GetxController {
     }
   }
 
-  Stream<List<StoreDraw>> findStoreDraws(String storeFK) => FirebaseFirestore
-      .instance
-      .collection('stores')
-      .doc(storeFK)
-      .collection('store_draws')
-      .snapshots()
-      .map((snapshot) =>
-          snapshot.docs.map((doc) => StoreDraw.fromJson(doc.data())).toList());
+  Stream<List<StoreDraw>> findStoreDraws(String storeFK) {
+    return FirebaseFirestore.instance
+        .collection('stores')
+        .doc(storeFK)
+        .collection('store_draws')
+        .orderBy('drawDateAndTime.year', descending: false)
+        .orderBy('drawDateAndTime.month', descending: false)
+        .orderBy('drawDateAndTime.day', descending: false)
+        .orderBy('drawDateAndTime.hour', descending: false)
+        .orderBy('drawDateAndTime.minute', descending: false)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => StoreDraw.fromJson(doc.data()))
+            .toList());
+  }
 
   Future<StoreDraw?> findStoreDraw(String storeFK, String storeDrawId) async {
     DocumentReference reference = FirebaseFirestore.instance
@@ -237,21 +242,6 @@ class StoreController extends GetxController {
     }
 
     return null;
-  }
-
-  void incrementNumberOfCompetitorsSoFar(
-      String storeFK, String storeDrawId, int numberOfGroupCompetitorsSoFar) {
-    StoreDraw storeDraw = findStoreDraw(storeFK, storeDrawId) as StoreDraw;
-
-    FirebaseFirestore.instance
-        .collection('stores')
-        .doc(storeFK)
-        .collection('store_draws')
-        .doc(storeDrawId)
-        .update({
-      'numberOfGroupCompetitorsSoFar':
-          storeDraw.numberOfGroupCompetitorsSoFar + 1
-    });
   }
 
   void updateIsOpen(String storeFK, String storeDrawId, bool isOpen) {

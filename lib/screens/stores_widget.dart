@@ -7,7 +7,6 @@ import '../../main.dart';
 
 import '../../models/stores/store_name_info.dart';
 
-import 'store_name_info_widget.dart';
 import 'store_state_widget.dart';
 
 class StoresWidget extends StatefulWidget {
@@ -24,22 +23,6 @@ class StoresWidgetState extends State<StoresWidget> {
   StoreController storeController = StoreController.storeController;
   late Stream<List<StoreNameInfo>> storeNamesInfoStream;
   late List<StoreNameInfo> storeNamesInfo;
-
-  int? indexOfOpenedStore;
-
-  void keepAtMostOneStoreOpened(int indexOfOpenedStore) {
-    setState(() {
-      this.indexOfOpenedStore = indexOfOpenedStore;
-      for (int infoIndex = 0; infoIndex < storeNamesInfo.length; infoIndex++) {
-        if (storeNamesInfo[infoIndex].isOpened &&
-            infoIndex != indexOfOpenedStore) {
-          storeNamesInfo[infoIndex].isOpened = false;
-        } else if (infoIndex == indexOfOpenedStore) {
-          storeNamesInfo[infoIndex].isOpened = true;
-        }
-      }
-    });
-  }
 
   @override
   void initState() {
@@ -69,17 +52,11 @@ class StoresWidgetState extends State<StoresWidget> {
                 return ListView.builder(
                     itemCount: storeNamesInfo.length,
                     itemBuilder: ((context, index) {
-                      return /*StoreNameInfoWidget(
-                        storeNameInfo: storeNamesInfo[index],
-                        infoIndex: index,
-                        onOpenChanged: keepAtMostOneStoreOpened,
-                      ); */
-
-                          SizedBox(
-                        height: 500,
-                        child: StoreStateWidget(
-                          storeId: storeNamesInfo[index].storeNameInfoId,
-                        ),
+                      return StoreStateWidget(
+                        storeId: storeNamesInfo[index].storeNameInfoId,
+                        storeName: storeNamesInfo[index].storeName,
+                        storeImageURL: storeNamesInfo[index].storeImageURL,
+                        sectionName: storeNamesInfo[index].sectionName,
                       );
                     }));
               } else if (snapshot.hasError) {

@@ -31,9 +31,9 @@ Future main() async {
   });
   // Ideal time to initialize
   // await FirebaseAuth.instance.useAuthEmulator('localhost', 9099);
-  // await FirebaseStorage.instance.useStorageEmulator('127.0.0.1', 9199);
+  await FirebaseStorage.instance.useStorageEmulator('127.0.0.1', 9199);
   // FirebaseFunctions.instance.useFunctionsEmulator('127.0.0.1', 5001);
-  // FirebaseFirestore.instance.useFirestoreEmulator('127.0.0.1', 8080);
+  FirebaseFirestore.instance.useFirestoreEmulator('127.0.0.1', 8080);
   runApp(MyApplication());
 } // 0767543823
 

@@ -1,26 +1,39 @@
 import 'package:alcoholic/controllers/competition_controller.dart';
+import 'package:alcoholic/models/stores/store_draw_state.dart';
+import 'package:alcoholic/screens/competition_finished_widget.dart';
+import 'package:alcoholic/screens/grand_prices_grid._widget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 
 import '../../controllers/store_controller.dart';
 
-import '../../models/Utilities/global.dart';
-import '../../models/stores/store.dart';
 import '../../models/stores/store_draw.dart';
-import '../../models/competitions/won_price_summary.dart';
+import '../main.dart';
+import '../models/Utilities/converter.dart';
+import '../models/Utilities/read_only.dart';
+import '../models/competitions/competition.dart';
+import '../models/section_name.dart';
+import 'competitors_grid_widget.dart';
 import 'no_competition_widget.dart';
 import 'on_play_widget.dart';
+import 'on_wait_widget.dart';
 import 'wait_widget.dart';
-import 'winner_widget.dart';
 import 'dart:developer' as debug;
 
 class StoreStateWidget extends StatefulWidget {
   // Step 1 - Accept the current store.
   String storeId;
+  String storeName;
+  String storeImageURL;
+  SectionName sectionName;
 
   StoreStateWidget({
     super.key,
     required this.storeId,
+    required this.storeName,
+    required this.storeImageURL,
+    required this.sectionName,
   });
 
   @override
@@ -28,175 +41,358 @@ class StoreStateWidget extends StatefulWidget {
 }
 
 class StoreStateWidgetState extends State<StoreStateWidget> {
-  List<Widget> storeStates = [];
   late DateTime justNow;
 
-  StoreController storeController = StoreController.storeController;
-  CompetitionController competitionController =
-      CompetitionController.competitionController;
-  // Step 3 - Query the current store's draws.
-  late Query<Map<String, dynamic>> query;
+  late StoreController storeController;
+  late CompetitionController competitionController;
+  Reference storageReference = FirebaseStorage.instance
+      .refFromURL("gs://alcoholic-expressions.appspot.com/");
 
-  late Duration? remainingDuration;
+  late Stream<List<StoreDraw>> storeDrawsStream;
+  late List<StoreDraw> storeDraws;
+
+  StoreDraw? latestStoreDraw;
+  Duration? remainingDuration;
+
+  bool isCurrentlyViewed = false;
 
   @override
   void initState() {
     super.initState();
-    debug.log('store state widget [initState]...');
+
+    storeController = StoreController.storeController;
+    competitionController = CompetitionController.competitionController;
+
+    storeDrawsStream = storeController.findStoreDraws(widget.storeId);
 
     justNow = DateTime.now();
-
-    // Step 3 - Query the current store's draws.
-    query = FirebaseFirestore.instance
-        .collection('stores')
-        .doc('+27674533323') // +27787653542 +27832121223
-        .collection('store_draws')
-        .orderBy('drawDateAndTime.year', descending: false)
-        .orderBy('drawDateAndTime.month', descending: false)
-        .orderBy('drawDateAndTime.day', descending: false)
-        .orderBy('drawDateAndTime.hour', descending: false)
-        .orderBy('drawDateAndTime.minute', descending: false);
-  }
-
-  /* Only allowed to set commingSoonCompetition,
-     currentlyPlayingCompetition, hasWinner */
-  void addCommingSoonOrPlayingOrHasWinner(String storeDrawId,
-      DocumentSnapshot<Map<String, dynamic>> readOnlySnapshot) {
-    debug.log('addCommingSoonOrPlayingOrHasWinner...');
-    FirebaseFirestore.instance
-        .collection("competitions")
-        .doc(storeDrawId)
-        .snapshots()
-        .map((competitionSnapshot) {
-      if (competitionSnapshot.exists) {
-        debug.log('competitionSnapshot.exists...');
-        // The competition is comming soon, remaining time should be displayed.
-        if (readOnlySnapshot.data()!['remainingTime'] < 0 &&
-            competitionSnapshot.data()!["isLive"] == false) {
-          debug.log('The competition is comming soon...');
-          remainingDuration =
-              Duration(seconds: readOnlySnapshot.data()!['remainingTime']);
-          addStoreDrawStateWidget(
-              storeDrawId, StoreState.hasCommingSoonCompetition);
-        }
-        // The competition is currently playing.
-        else if (readOnlySnapshot.data()!['remainingTime'] >= 1 &&
-            competitionSnapshot.data()!["isLive"] &&
-            competitionSnapshot.data()!["isOver"] == false) {
-          debug.log('The competition is currently playing...');
-          addStoreDrawStateWidget(
-              storeDrawId, StoreState.hasCurrentlyPlayingCompetition);
-        }
-        // The competition has a winner.
-        else if (competitionSnapshot.data()!["isLive"] == false &&
-            competitionSnapshot.data()!["isOver"]) {
-          debug.log('The competition has a winner...');
-          addStoreDrawStateWidget(storeDrawId, StoreState.hasWinner);
-        }
-      }
-    });
   }
 
   StoreStateWidgetState();
 
-  void addStoreDrawStateWidget(String? storeDrawId, StoreState storeState) {
-    // Step 5
-    switch (storeState) {
-      case StoreState.hasNoCompetition:
-        debug.log('store state widget [hasNoCompetition]...');
-        Store? store;
-        storeController.findStore(widget.storeId).then((value) {
-          store = value;
+  void updateIsCurrentlyViewed(bool isCurrentlyViewed) {
+    setState(() {
+      this.isCurrentlyViewed = isCurrentlyViewed;
+    });
+  }
 
-          storeStates.add(NoCompetitionWidget(
-              storeId: store!.storeOwnerPhoneNumber,
-              storeName: store!.storeName,
-              sectionName: store!.sectionName,
-              storeImageURL: store!.storeImageURL));
-        });
+  Widget remainingTime(int minutes, int seconds) {
+    return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Remaining Time ',
+              style: TextStyle(
+                  fontSize: MyApplication.infoTextFontSize,
+                  color: MyApplication.storesSpecialTextColor,
+                  fontWeight: FontWeight.bold,
+                  decoration: TextDecoration.none),
+            ),
+            Text(
+              '$minutes:$seconds',
+              style: TextStyle(
+                  fontSize: MyApplication.infoTextFontSize,
+                  color: MyApplication.storesSpecialTextColor,
+                  fontWeight: FontWeight.bold,
+                  decoration: TextDecoration.none),
+            ),
+          ],
+        ));
+  }
 
-        break;
-      case StoreState
-          .hasCommingCompetition: /*
-        storeStates.add(WaitWidget(
-          storeId: widget.storeId,
-          storeDrawId: storeDrawId!,
-        )); */
-        break;
-      case StoreState
-          .hasCommingSoonCompetition: /*
-        storeStates.add(WaitWidget(
-          storeId: widget.storeId,
-          storeDrawId: storeDrawId!,
-          remainingDuration: remainingDuration,
-        )); */
-        break;
-      case StoreState
-          .hasCurrentlyPlayingCompetition: /*
-        StoreDraw? storeDraw;
-        storeController.findStoreDraw(widget.storeId, storeDrawId!);
-        storeStates.add(OnPlayWidget(
-            storeId: widget.storeId,
-            storeName: storeDraw?.storeName,
-            sectionName: storeDraw?.sectionName,
-            storeImageURL: storeDraw?.storeImageURL)); */
-        break;
-      case StoreState.hasWinner:
-        debug.log('store state widget [hasWinner]...');
-        WonPriceSummary? wonPriceSummary;
-        competitionController
-            .findWonPriceSummary('+27674533323', storeDrawId!)
-            .then((value) {
-          wonPriceSummary = value;
-          storeStates.add(WinnerWidget(wonPriceSummary: wonPriceSummary!));
-        });
-    }
+  Column retrieveStoreDetails(BuildContext context) {
+    // Information About The Hosting Store.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // The Name Of A Store On Which The Winner Won From.
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                'Store Name',
+                style: TextStyle(
+                    fontSize: MyApplication.infoTextFontSize,
+                    color: MyApplication.storesTextColor,
+                    fontWeight: FontWeight.bold,
+                    decoration: TextDecoration.none),
+              ),
+            ),
+            Expanded(
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  widget.storeName,
+                  style: TextStyle(
+                    fontSize: MyApplication.infoTextFontSize,
+                    fontWeight: FontWeight.bold,
+                    color: MyApplication.storesTextColor,
+                    decoration: TextDecoration.none,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        // The Address Of A Store On Which The Winner Won From.
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                'Store Area',
+                style: TextStyle(
+                    fontSize: MyApplication.infoTextFontSize,
+                    fontWeight: FontWeight.bold,
+                    color: MyApplication.storesTextColor,
+                    decoration: TextDecoration.none),
+              ),
+            ),
+            Expanded(
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  Converter.asString(widget.sectionName),
+                  style: TextStyle(
+                      fontSize: MyApplication.infoTextFontSize,
+                      fontWeight: FontWeight.bold,
+                      color: MyApplication.storesTextColor,
+                      decoration: TextDecoration.none,
+                      overflow: TextOverflow.ellipsis),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Future<String> retrieveStoreImageURL() {
+    return storageReference.child(widget.storeImageURL).getDownloadURL();
+  }
+
+  AspectRatio retrieveStoreImage(BuildContext context, String storeImageURL) {
+    // The Image Of A Store On Which The Winner Won From.
+    return AspectRatio(
+      aspectRatio: 5 / 2,
+      child: Container(
+        //margin: EdgeInsets.symmetric(horizontal: MediaQuery.of(context).size.width/8) ,
+        decoration: BoxDecoration(
+          color: Colors.orange,
+          borderRadius: BorderRadius.circular(20),
+          image: DecorationImage(
+              fit: BoxFit.cover, image: NetworkImage(storeImageURL)),
+        ),
+      ),
+    );
+  }
+
+  Widget myStoreState() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 5),
+      child: StreamBuilder<List<StoreDraw>>(
+        stream: storeDrawsStream,
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            storeDraws = snapshot.data as List<StoreDraw>;
+
+            // The are store draws on a given store.
+            if (storeDraws.isNotEmpty) {
+              latestStoreDraw = storeDraws[0 /*storeDraws.length - 1*/];
+
+              int day = latestStoreDraw!.drawDateAndTime.day;
+              int month = latestStoreDraw!.drawDateAndTime.month;
+              int year = latestStoreDraw!.drawDateAndTime.year;
+              int hour = latestStoreDraw!.drawDateAndTime.hour;
+              int minute = latestStoreDraw!.drawDateAndTime.minute;
+
+              String readOnlyId = "$day-$month-$year-$hour-$minute";
+
+              return StreamBuilder<DocumentSnapshot>(
+                stream: competitionController.retrieveReadOnly(readOnlyId),
+                builder: ((context, snapshot) {
+                  if (snapshot.hasData && snapshot.data!.exists) {
+                    ReadOnly readOnly = ReadOnly.fromJson(snapshot.data);
+
+                    // The store draw is not yet converted into a competition.
+                    if (latestStoreDraw!.storeDrawState ==
+                        StoreDrawState.notConvertedToCompetition) {
+                      return WaitWidget(
+                        storeDraw: latestStoreDraw!,
+                      );
+                    }
+                    // The store draw is converted into a competition.
+                    else if (latestStoreDraw!.storeDrawState ==
+                        StoreDrawState.convertedToCompetition) {
+                      if (readOnly.remainingTime < 0) {
+                        return OnWaitWidget(
+                          storeDraw: latestStoreDraw!,
+                          remainingDuration:
+                              Duration(seconds: readOnly.remainingTime * -1),
+                        );
+                      } else {
+                        // store draw state suppose to be on playing-competition-state
+
+                        //Display play icon
+                        if (isCurrentlyViewed == false) {
+                          return OnPlayWidget(
+                            storeId: widget.storeId,
+                            storeName: widget.storeName,
+                            storeImageURL: widget.storeImageURL,
+                            sectionName: widget.sectionName,
+                            onCurrentlyViewedUpdate: updateIsCurrentlyViewed,
+                          );
+                        }
+
+                        // Display either a grand price picking ui or group picking ui.
+                        else {
+                          return FutureBuilder(
+                            future: competitionController
+                                .findCompetition(latestStoreDraw!.storeDrawId),
+                            builder: (context, snapshot) {
+                              if (snapshot.hasData) {
+                                Competition competition =
+                                    snapshot.data as Competition;
+                                int grandPricePickingDuration =
+                                    competition.grandPricePickingDuration!;
+                                int groupPickingDuration =
+                                    competition.groupPickingDuration!;
+
+                                // Show grand price picking
+                                if (readOnly.remainingTime <
+                                    grandPricePickingDuration) {
+                                  debug.log("returns grand prices grid...");
+                                  return GrandPricesGridWidget(
+                                      competitionId: competition.competitionId!,
+                                      passedTime: readOnly.remainingTime);
+                                }
+                                // Show group picking
+                                else if (readOnly.remainingTime <
+                                    grandPricePickingDuration +
+                                        groupPickingDuration) {
+                                  debug.log("returns competitors grid...");
+                                  return CompetitorsGridWidget(
+                                      competitionId: competition.competitionId!,
+                                      passedTime: readOnly.remainingTime);
+                                }
+                                // Show game over
+                                else {
+                                  return CompetitionFinishedWidget(
+                                      endMoment: competition.dateTime.add(Duration(
+                                          seconds: competition
+                                                  .grandPricePickingDuration! +
+                                              competition
+                                                  .groupPickingDuration!)));
+                                }
+                              } else if (snapshot.hasError) {
+                                debug.log(
+                                    'Error fetching competition data ${snapshot.error}');
+                                return const Center(
+                                  child: CircularProgressIndicator(),
+                                );
+                              } else {
+                                return const Center(
+                                  child: CircularProgressIndicator(),
+                                );
+                              }
+                            },
+                          );
+                        }
+                      }
+                    }
+
+                    // The competition is currently playing.
+                    else if (latestStoreDraw!.storeDrawState ==
+                        StoreDrawState.playingCompetition) {
+                      return OnPlayWidget(
+                        storeId: widget.storeId,
+                        storeName: widget.storeName,
+                        storeImageURL: widget.storeImageURL,
+                        sectionName: widget.sectionName,
+                        onCurrentlyViewedUpdate: updateIsCurrentlyViewed,
+                      );
+                    }
+                    // The competition is over.
+                    else {
+                      return NoCompetitionWidget(
+                          storeId: widget.storeId,
+                          storeName: widget.storeName,
+                          storeImageURL: widget.storeImageURL,
+                          sectionName: widget.sectionName);
+                    }
+                  } else if (snapshot.hasError) {
+                    debug.log(
+                        "Error Fetching read only Data - ${snapshot.error}");
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  } else {
+                    // The corresponding readonly document do not exist yet.
+                    return WaitWidget(
+                      storeDraw: latestStoreDraw!,
+                    );
+                  }
+                }),
+              );
+            }
+            // There are no store draws on a given store.
+            else {
+              return NoCompetitionWidget(
+                  storeId: widget.storeId,
+                  storeName: widget.storeName,
+                  storeImageURL: widget.storeImageURL,
+                  sectionName: widget.sectionName);
+            }
+          } else if (snapshot.hasError) {
+            debug
+                .log("Error Fetching Last Store Draw Data - ${snapshot.error}");
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          } else {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+        },
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    debug.log('store state widget [build]...');
-    query.snapshots().forEach((element) {
-      // No store draws have ever been created on this store so far.
-      if (element.size == 0) {
-        addStoreDrawStateWidget(null, StoreState.hasNoCompetition);
-      } else {
-        // Step 4 - Check whether each store draw has a competition.
-        query.snapshots().map((storeDrawsSnapshot) =>
-            storeDrawsSnapshot.docs.map((storeDrawDoc) {
-              StoreDraw storeDraw = StoreDraw.fromJson(storeDrawDoc.data());
-
-              // Find the date of the current store draw.
-              int day = storeDraw.drawDateAndTime.day;
-              int month = storeDraw.drawDateAndTime.month;
-              int year = storeDraw.drawDateAndTime.year;
-              int hour = storeDraw.drawDateAndTime.hour;
-              int minute = storeDraw.drawDateAndTime.minute;
-              String competitionDateId = '$day-$month-$year-$hour-$minute';
-
-              /* Check if the current store draw is yet 
-              converted into a competition or not.*/
-              FirebaseFirestore.instance
-                  .collection('read_only')
-                  .doc(competitionDateId)
-                  .snapshots()
-                  .map((readOnlySnapshot) {
-                /* The current store draw has a competition 
-                    either comming soon, in progress or that is finished.*/
-                if (readOnlySnapshot.exists) {
-                  addCommingSoonOrPlayingOrHasWinner(
-                      storeDraw.storeDrawId, readOnlySnapshot);
-                } else if (storeDraw.isOpen) {
-                  addStoreDrawStateWidget(
-                      storeDraw.storeDrawId, StoreState.hasCommingCompetition);
-                }
-              });
-            }));
-      }
-    });
-
-    return ListView(
-      children: storeStates,
+    return SizedBox(
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: FutureBuilder(
+                future: retrieveStoreImageURL(),
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    return retrieveStoreImage(context, snapshot.data as String);
+                  } else if (snapshot.hasError) {
+                    debug.log('Error Fetching Store Image - ${snapshot.error}');
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  } else {
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+                }),
+          ),
+          retrieveStoreDetails(context),
+          myStoreState(),
+        ],
+      ),
     );
   }
 }

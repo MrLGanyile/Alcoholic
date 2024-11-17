@@ -632,5 +632,10 @@ service cloud.firestore {
         }
       }
     }
+
+    match /read_only/{readOnlyId}{
+      allow read;
+      allow write: if false;
+    }
   }
 }

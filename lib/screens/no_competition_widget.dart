@@ -24,37 +24,12 @@ class NoCompetitionWidget extends StoreInfoWidget {
 class NoCompetitionWidgetState extends State<NoCompetitionWidget> {
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-        future: widget.createStoreImageURL(),
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            return Column(children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 20),
-                child:
-                    widget.retrieveStoreImage(context, snapshot.data as String),
-              ),
-              widget.retrieveStoreDetails(context),
-              const Center(
-                  child: Text(
-                'No Competition',
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.pink),
-              )),
-            ]);
-          } else if (snapshot.hasError) {
-            debug.log(
-                "Error Fetching Data No Store Image Data- ${snapshot.error}");
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          } else {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
-        });
+    return const Center(
+        child: Text(
+      'No Competition',
+      style: TextStyle(
+          fontSize: 16, fontWeight: FontWeight.bold, color: Colors.pink),
+    ));
+    ;
   }
 }

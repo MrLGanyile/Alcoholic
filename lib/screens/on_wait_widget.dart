@@ -1,103 +1,100 @@
-import 'dart:developer' as debug;
+import 'package:alcoholic/models/Utilities/converter.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'dart:developer' as debug;
 
+import '../../controllers/store_controller.dart';
 import '../../main.dart';
 import '../../models/stores/store_draw.dart';
-import 'store_info_widget.dart';
+import '../models/stores/draw_grand_price.dart';
 import 'competition_screen_helper.dart';
 
-class OnWaitWidget extends StoreInfoWidget {
+class OnWaitWidget extends StatefulWidget {
   StoreDraw storeDraw;
+  Duration remainingDuration;
 
   OnWaitWidget({
-    super.key,
+    Key? key,
     required this.storeDraw,
-    required storeId,
-    required storeName,
-    required sectionName,
-    required storeImageURL,
-  }) : super(
-          storeId: storeId,
-          storeName: storeName,
-          storeImageURL: storeImageURL,
-          sectionName: sectionName,
-        );
+    required this.remainingDuration,
+  }) : super(key: key);
 
   @override
-  State createState() => OnWaitWidgetState();
-
-  Widget remainingTime(DateTime specialDate) {
-    DateTime justNow = DateTime.now();
-    int newHours = specialDate.hour,
-        newMinutes = specialDate.minute,
-        newSeconds = specialDate.second;
-
-    if (specialDate.second >= justNow.second) {
-      newSeconds = specialDate.second - justNow.second;
-    } else {
-      if (specialDate.minute > 0) {
-        newMinutes--;
-      } else {
-        newHours--;
-        newMinutes = 59;
-      }
-      newSeconds = specialDate.second + 60 - justNow.second;
-    }
-
-    DateTime newDate = DateTime(
-      specialDate.year,
-      specialDate.month,
-      specialDate.day,
-      newHours - justNow.hour,
-      newMinutes - justNow.minute,
-      newSeconds - justNow.second,
-    );
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            'Remaining Time',
-            style: TextStyle(
-                fontSize: MyApplication.infoTextFontSize,
-                color: MyApplication.storeInfoTextColor,
-                fontWeight: FontWeight.bold,
-                decoration: TextDecoration.none),
-          ),
-          Text(
-            '${newDate.hour}:${newDate.minute}:${newDate.second}',
-            style: TextStyle(
-                fontSize: MyApplication.infoTextFontSize,
-                color: MyApplication.storeInfoTextColor,
-                fontWeight: FontWeight.bold,
-                decoration: TextDecoration.none),
-          ),
-        ],
-      ),
-    );
-  }
+  State<StatefulWidget> createState() => OnWaitWidgetState();
 }
 
 class OnWaitWidgetState extends State<OnWaitWidget> {
+  StoreController storeController = StoreController.storeController;
+  Reference storageReference = FirebaseStorage.instance
+      .refFromURL("gs://alcoholic-expressions.appspot.com/");
+  late Stream<List<DrawGrandPrice>> drawGrandPricesStream;
+  late List<DrawGrandPrice> drawGrandPrices;
+
+  @override
+  void initState() {
+    super.initState();
+    drawGrandPricesStream = storeController.findDrawGrandPrices(
+        widget.storeDraw.storeFK, widget.storeDraw.storeDrawId);
+  }
+
+  Widget remainingTime(int minutes, int seconds) {
+    return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Remaining Time ',
+              style: TextStyle(
+                  fontSize: MyApplication.infoTextFontSize,
+                  color: MyApplication.storesSpecialTextColor,
+                  fontWeight: FontWeight.bold,
+                  decoration: TextDecoration.none),
+            ),
+            Text(
+              '$minutes:$seconds',
+              style: TextStyle(
+                  fontSize: MyApplication.infoTextFontSize,
+                  color: MyApplication.storesSpecialTextColor,
+                  fontWeight: FontWeight.bold,
+                  decoration: TextDecoration.none),
+            ),
+          ],
+        ));
+  }
+
   @override
   Widget build(BuildContext context) {
-    Column detailsColumn = widget.retrieveStoreDetails(context);
+    int initialDuration = widget.remainingDuration.inSeconds;
 
-    detailsColumn.children
-        .add(widget.remainingTime(widget.storeDraw.drawDateAndTime));
+    int minutes = initialDuration ~/ 60;
+    int seconds = initialDuration % 60;
 
-    return SizedBox(
-      height: MediaQuery.of(context).size.height * 0.75,
-      child: Column(children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          child: widget.retrieveStoreImage(context, ''),
-        ),
-        detailsColumn,
-        _buildGrandPrices(),
-      ]),
+    // Sometimes the returned snapshot has empty data.
+    return StreamBuilder(
+      stream: drawGrandPricesStream,
+      builder: ((context, snapshot) {
+        if (snapshot.hasData) {
+          drawGrandPrices = snapshot.data as List<DrawGrandPrice>;
+
+          return Column(
+            children: [
+              remainingTime(minutes, seconds),
+              _buildGrandPrices(),
+            ],
+          );
+        } else if (snapshot.hasError) {
+          debug.log(
+              'Error Fetching All Draw Grand Prices Data - ${snapshot.error}');
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        } else {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        }
+      }),
     );
   }
 
@@ -106,7 +103,13 @@ class OnWaitWidgetState extends State<OnWaitWidget> {
 
     double horizontalGrandPriceSpaceces = 10;
 
-    switch (widget.storeDraw.numberOfGroupCompetitorsSoFar) {
+    if (drawGrandPrices.isEmpty) {
+      return const Center(
+        child: Text("No Grand Prices Available"),
+      );
+    }
+
+    switch (drawGrandPrices.length) {
       case 4:
         grid = Column(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -118,11 +121,11 @@ class OnWaitWidgetState extends State<OnWaitWidget> {
                 children: [
                   // Top Left Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: widget.storeDraw, grandPriceIndex: 0),
+                      grandPriceImageURL: drawGrandPrices[0].imageURL),
                   const Expanded(child: SizedBox.shrink()),
                   // Top Right Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: widget.storeDraw, grandPriceIndex: 1),
+                      grandPriceImageURL: drawGrandPrices[1].imageURL),
                 ],
               ),
             ),
@@ -139,11 +142,11 @@ class OnWaitWidgetState extends State<OnWaitWidget> {
                 children: [
                   // Bottom Left Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: widget.storeDraw, grandPriceIndex: 2),
+                      grandPriceImageURL: drawGrandPrices[2].imageURL),
                   const Expanded(child: SizedBox.shrink()),
                   // Bottom Right Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: widget.storeDraw, grandPriceIndex: 3),
+                      grandPriceImageURL: drawGrandPrices[3].imageURL),
                 ],
               ),
             ),
@@ -161,11 +164,11 @@ class OnWaitWidgetState extends State<OnWaitWidget> {
                 children: [
                   // Top Left Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: widget.storeDraw, grandPriceIndex: 0),
+                      grandPriceImageURL: drawGrandPrices[0].imageURL),
                   buildAlarm(),
                   // Top Right Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: widget.storeDraw, grandPriceIndex: 1),
+                      grandPriceImageURL: drawGrandPrices[1].imageURL),
                 ],
               ),
             ),
@@ -174,7 +177,7 @@ class OnWaitWidgetState extends State<OnWaitWidget> {
               children: [
                 // Middle Grand Price.
                 CompetitionScreenHelper(
-                    storeDraw: widget.storeDraw, grandPriceIndex: 2),
+                    grandPriceImageURL: drawGrandPrices[2].imageURL),
               ],
             ),
             Padding(
@@ -184,11 +187,11 @@ class OnWaitWidgetState extends State<OnWaitWidget> {
                 children: [
                   // Bottom Left Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: widget.storeDraw, grandPriceIndex: 3),
+                      grandPriceImageURL: drawGrandPrices[3].imageURL),
                   const Expanded(child: SizedBox.shrink()),
                   // Bottom Right Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: widget.storeDraw, grandPriceIndex: 4),
+                      grandPriceImageURL: drawGrandPrices[4].imageURL),
                 ],
               ),
             ),
@@ -208,13 +211,11 @@ class OnWaitWidgetState extends State<OnWaitWidget> {
                 children: [
                   // Top Left Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: widget.storeDraw, grandPriceIndex: 0),
+                      grandPriceImageURL: drawGrandPrices[0].imageURL),
                   buildAlarm(),
                   // Top Right Grand Price.
                   CompetitionScreenHelper(
-                      alignmentGeometry: Alignment.centerRight,
-                      storeDraw: widget.storeDraw,
-                      grandPriceIndex: 1),
+                      grandPriceImageURL: drawGrandPrices[1].imageURL),
                 ],
               ),
             ),
@@ -223,11 +224,11 @@ class OnWaitWidgetState extends State<OnWaitWidget> {
               children: [
                 // Middle Left Grand Price.
                 CompetitionScreenHelper(
-                    storeDraw: widget.storeDraw, grandPriceIndex: 2),
+                    grandPriceImageURL: drawGrandPrices[2].imageURL),
                 const Expanded(child: SizedBox.shrink()),
                 // Middle Right Grand Price.
                 CompetitionScreenHelper(
-                    storeDraw: widget.storeDraw, grandPriceIndex: 3),
+                    grandPriceImageURL: drawGrandPrices[3].imageURL),
               ],
             ),
             Padding(
@@ -239,11 +240,11 @@ class OnWaitWidgetState extends State<OnWaitWidget> {
                 children: [
                   // Bottom Left Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: widget.storeDraw, grandPriceIndex: 4),
+                      grandPriceImageURL: drawGrandPrices[4].imageURL),
                   const Expanded(child: SizedBox.shrink()),
                   // Bottom Right Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: widget.storeDraw, grandPriceIndex: 5),
+                      grandPriceImageURL: drawGrandPrices[5].imageURL),
                 ],
               ),
             ),
@@ -263,11 +264,11 @@ class OnWaitWidgetState extends State<OnWaitWidget> {
                 children: [
                   // Top Left Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: widget.storeDraw, grandPriceIndex: 0),
+                      grandPriceImageURL: drawGrandPrices[0].imageURL),
                   buildAlarm(),
                   // Top Right Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: widget.storeDraw, grandPriceIndex: 1),
+                      grandPriceImageURL: drawGrandPrices[1].imageURL),
                 ],
               ),
             ),
@@ -276,13 +277,13 @@ class OnWaitWidgetState extends State<OnWaitWidget> {
               children: [
                 // Middle Left Grand Price.
                 CompetitionScreenHelper(
-                    storeDraw: widget.storeDraw, grandPriceIndex: 2),
+                    grandPriceImageURL: drawGrandPrices[2].imageURL),
                 // Middle Right Grand Price.
                 CompetitionScreenHelper(
-                    storeDraw: widget.storeDraw, grandPriceIndex: 3),
+                    grandPriceImageURL: drawGrandPrices[3].imageURL),
                 // Middle Grand Price.
                 CompetitionScreenHelper(
-                    storeDraw: widget.storeDraw, grandPriceIndex: 4),
+                    grandPriceImageURL: drawGrandPrices[4].imageURL),
               ],
             ),
             Padding(
@@ -294,11 +295,11 @@ class OnWaitWidgetState extends State<OnWaitWidget> {
                 children: [
                   // Bottom Left Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: widget.storeDraw, grandPriceIndex: 5),
+                      grandPriceImageURL: drawGrandPrices[5].imageURL),
                   const Expanded(child: SizedBox.shrink()),
                   // Bottom Right Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: widget.storeDraw, grandPriceIndex: 6),
+                      grandPriceImageURL: drawGrandPrices[6].imageURL),
                 ],
               ),
             ),
@@ -318,13 +319,13 @@ class OnWaitWidgetState extends State<OnWaitWidget> {
                 children: [
                   // Top Left Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: widget.storeDraw, grandPriceIndex: 0),
+                      grandPriceImageURL: drawGrandPrices[0].imageURL),
                   // Top Middle Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: widget.storeDraw, grandPriceIndex: 1),
+                      grandPriceImageURL: drawGrandPrices[1].imageURL),
                   // Top Right Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: widget.storeDraw, grandPriceIndex: 2),
+                      grandPriceImageURL: drawGrandPrices[2].imageURL),
                 ],
               ),
             ),
@@ -333,11 +334,11 @@ class OnWaitWidgetState extends State<OnWaitWidget> {
               children: [
                 // Middle Right Grand Price.
                 CompetitionScreenHelper(
-                    storeDraw: widget.storeDraw, grandPriceIndex: 3),
+                    grandPriceImageURL: drawGrandPrices[3].imageURL),
                 buildAlarm(),
                 // Middle Left Grand Price.
                 CompetitionScreenHelper(
-                    storeDraw: widget.storeDraw, grandPriceIndex: 4),
+                    grandPriceImageURL: drawGrandPrices[4].imageURL),
               ],
             ),
             Padding(
@@ -349,13 +350,13 @@ class OnWaitWidgetState extends State<OnWaitWidget> {
                 children: [
                   // Bottom Left Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: widget.storeDraw, grandPriceIndex: 5),
+                      grandPriceImageURL: drawGrandPrices[5].imageURL),
                   // Middle Bottom Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: widget.storeDraw, grandPriceIndex: 6),
+                      grandPriceImageURL: drawGrandPrices[6].imageURL),
                   // Bottom Right Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: widget.storeDraw, grandPriceIndex: 7),
+                      grandPriceImageURL: drawGrandPrices[7].imageURL),
                 ],
               ),
             ),
@@ -378,7 +379,8 @@ class OnWaitWidgetState extends State<OnWaitWidget> {
             },
             icon: Icon(
               Icons.add_alarm,
-              size: MyApplication.alarmIconFontSize - 5,
+              color: MyApplication.storesTextColor,
+              size: MyApplication.alarmIconFontSize - 10,
             ),
           ),
         ),

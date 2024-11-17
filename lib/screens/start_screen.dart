@@ -6,7 +6,7 @@ import 'groups_screen.dart';
 import 'home_widget.dart';
 import 'showoff_screen.dart';
 
-import 'stores_widget.dart' as prod_stores_widget;
+import 'stores_widget.dart';
 
 class StartScreen extends StatefulWidget {
   StartScreen({
@@ -35,7 +35,7 @@ class _StartScreenState extends State<StartScreen>
       length: 4,
       vsync: this,
     );
-  } 
+  }
 
   @override
   void dispose() {
@@ -124,66 +124,10 @@ class _StartScreenState extends State<StartScreen>
           child: TabBarView(controller: _tabController, children: [
             HomeWidget(),
             //DatePicker(),
-            prod_stores_widget.StoresWidget(),
+            StoresWidget(),
             GroupsScreen(),
-            /*prot_stores_widget.StoresWidget(
-              sampleForTesting: widget.sampleForTesting,
-            ), */
-
             ShowoffScreen(),
           ]),
         ),
       );
-}        
-
-/*
-class MyTabbedPage extends StatefulWidget {
-  const MyTabbedPage({ super.key });
-  @override
-  State<MyTabbedPage> createState() => _MyTabbedPageState();
 }
-
-class _MyTabbedPageState extends State<MyTabbedPage> with SingleTickerProviderStateMixin {
-  static const List<Tab> myTabs = <Tab>[
-    Tab(text: 'LEFT'),
-    Tab(text: 'RIGHT'),
-  ];
-
-  late TabController _tabController;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(vsync: this, length: myTabs.length);
-  }
-
- @override
- void dispose() {
-   _tabController.dispose();
-   super.dispose();
- }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: myTabs,
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: myTabs.map((Tab tab) {
-          final String label = tab.text!.toLowerCase();
-          return Center(
-            child: Text(
-              'This is the $label tab',
-              style: const TextStyle(fontSize: 36),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-}*/

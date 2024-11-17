@@ -1,6 +1,6 @@
 enum StoreDrawState {
-  isComming,
-  isCommingSoon,
-  isPlaying,
-  isOver,
+  notConvertedToCompetition,
+  convertedToCompetition,
+  playingCompetition,
+  competitionFinished,
 }

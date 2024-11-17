@@ -1,5 +1,4 @@
 import '../Utilities/converter.dart';
-import '../competitions/won_price_summary.dart';
 import 'package:alcoholic/models/section_name.dart';
 import '../Utilities/may_be_fake.dart';
 

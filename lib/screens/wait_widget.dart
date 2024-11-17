@@ -1,174 +1,77 @@
+import 'package:alcoholic/models/Utilities/converter.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'dart:developer' as debug;
 
 import '../../controllers/store_controller.dart';
 import '../../main.dart';
 import '../../models/stores/store_draw.dart';
+import '../models/stores/draw_grand_price.dart';
 import 'competition_screen_helper.dart';
 
-class WaitWidget extends StatelessWidget {
-  StoreController storeController = StoreController.storeController;
-  late StoreDraw? storeDraw;
-  Duration? remainingDuration;
-  String storeId;
-  String storeDrawId;
+class WaitWidget extends StatefulWidget {
+  StoreDraw storeDraw;
 
   WaitWidget({
     Key? key,
-    required this.storeId,
-    required this.storeDrawId,
-    this.remainingDuration,
+    required this.storeDraw,
   }) : super(key: key);
 
-  Widget remainingTime(int minutes, int seconds) {
-    return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Remaining Time ',
-              style: TextStyle(
-                  fontSize: MyApplication.infoTextFontSize,
-                  color: MyApplication.storesSpecialTextColor,
-                  fontWeight: FontWeight.bold,
-                  decoration: TextDecoration.none),
-            ),
-            Text(
-              '$minutes:$seconds',
-              style: TextStyle(
-                  fontSize: MyApplication.infoTextFontSize,
-                  color: MyApplication.storesSpecialTextColor,
-                  fontWeight: FontWeight.bold,
-                  decoration: TextDecoration.none),
-            ),
-          ],
-        ));
-  }
+  @override
+  State<StatefulWidget> createState() => WaitWidgetState();
+}
 
-  Column retrieveStoreDetails(BuildContext context) {
-    // Information About The Hosting Store.
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // The Name Of A Store On Which The Winner Won From.
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Text(
-                'Store Name',
-                style: TextStyle(
-                    fontSize: MyApplication.infoTextFontSize,
-                    color: MyApplication.storesTextColor,
-                    fontWeight: FontWeight.bold,
-                    decoration: TextDecoration.none),
-              ),
-            ),
-            Expanded(
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  storeDraw!.storeName,
-                  style: TextStyle(
-                    fontSize: MyApplication.infoTextFontSize,
-                    fontWeight: FontWeight.bold,
-                    color: MyApplication.storesTextColor,
-                    decoration: TextDecoration.none,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+class WaitWidgetState extends State<WaitWidget> {
+  StoreController storeController = StoreController.storeController;
+  Reference storageReference = FirebaseStorage.instance
+      .refFromURL("gs://alcoholic-expressions.appspot.com/");
+  late Stream<List<DrawGrandPrice>> drawGrandPricesStream;
+  late List<DrawGrandPrice> drawGrandPrices;
 
-        // The Address Of A Store On Which The Winner Won From.
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Text(
-                'Store Address',
-                style: TextStyle(
-                    fontSize: MyApplication.infoTextFontSize,
-                    fontWeight: FontWeight.bold,
-                    color: MyApplication.storesTextColor,
-                    decoration: TextDecoration.none),
-              ),
-            ),
-            Expanded(
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  'Store Address',
-                  style: TextStyle(
-                      fontSize: MyApplication.infoTextFontSize,
-                      fontWeight: FontWeight.bold,
-                      color: MyApplication.storesTextColor,
-                      decoration: TextDecoration.none,
-                      overflow: TextOverflow.ellipsis),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  AspectRatio retrieveStoreImage(BuildContext context) {
-    // The Image Of A Store On Which The Winner Won From.
-    return AspectRatio(
-      aspectRatio: 5 / 2,
-      child: Container(
-        //margin: EdgeInsets.symmetric(horizontal: MediaQuery.of(context).size.width/8) ,
-        decoration: BoxDecoration(
-          color: Colors.orange,
-          borderRadius: BorderRadius.circular(20),
-          image: DecorationImage(
-              fit: BoxFit.cover, image: NetworkImage(storeDraw!.storeImageURL)),
-        ),
-      ),
-    );
+  @override
+  void initState() {
+    super.initState();
+    drawGrandPricesStream = storeController.findDrawGrandPrices(
+        widget.storeDraw.storeFK, widget.storeDraw.storeDrawId);
   }
 
   @override
   Widget build(BuildContext context) {
-    storeController
-        .findStoreDraw(storeId, storeDrawId)
-        .then((value) => storeDraw = value);
+    // Sometimes the returned snapshot has empty data.
+    return StreamBuilder(
+      stream: drawGrandPricesStream,
+      builder: ((context, snapshot) {
+        if (snapshot.hasData) {
+          drawGrandPrices = snapshot.data as List<DrawGrandPrice>;
 
-    Column detailsColumn = retrieveStoreDetails(context);
-
-    if (remainingDuration != null) {
-      int initialDuration = remainingDuration!.inSeconds;
-
-      int minutes = initialDuration ~/ 60;
-      int seconds = initialDuration % 60;
-
-      detailsColumn.children.add(remainingTime(minutes, seconds));
-    }
-
-    return SizedBox(
-      height: MediaQuery.of(context).size.height * 0.75,
-      child: Column(children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          child: retrieveStoreImage(context),
-        ),
-        detailsColumn,
-        _buildGrandPrices(),
-      ]),
+          return _buildGrandPrices(drawGrandPrices.length);
+        } else if (snapshot.hasError) {
+          debug.log(
+              'Error Fetching All Draw Grand Prices Data - ${snapshot.error}');
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        } else {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        }
+      }),
     );
   }
 
-  Widget _buildGrandPrices() {
+  Widget _buildGrandPrices(int noOfGrandPrices) {
     Widget grid;
 
     double horizontalGrandPriceSpaceces = 10;
 
-    switch (storeDraw!.numberOfGroupCompetitorsSoFar) {
+    if (drawGrandPrices.isEmpty) {
+      return const Center(
+        child: Text("No Grand Prices Available"),
+      );
+    }
+
+    switch (noOfGrandPrices) {
       case 4:
         grid = Column(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -180,11 +83,11 @@ class WaitWidget extends StatelessWidget {
                 children: [
                   // Top Left Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: storeDraw!, grandPriceIndex: 0),
+                      grandPriceImageURL: drawGrandPrices[0].imageURL),
                   const Expanded(child: SizedBox.shrink()),
                   // Top Right Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: storeDraw!, grandPriceIndex: 1),
+                      grandPriceImageURL: drawGrandPrices[1].imageURL),
                 ],
               ),
             ),
@@ -201,11 +104,11 @@ class WaitWidget extends StatelessWidget {
                 children: [
                   // Bottom Left Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: storeDraw!, grandPriceIndex: 2),
+                      grandPriceImageURL: drawGrandPrices[2].imageURL),
                   const Expanded(child: SizedBox.shrink()),
                   // Bottom Right Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: storeDraw!, grandPriceIndex: 3),
+                      grandPriceImageURL: drawGrandPrices[3].imageURL),
                 ],
               ),
             ),
@@ -223,11 +126,11 @@ class WaitWidget extends StatelessWidget {
                 children: [
                   // Top Left Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: storeDraw!, grandPriceIndex: 0),
+                      grandPriceImageURL: drawGrandPrices[0].imageURL),
                   buildAlarm(),
                   // Top Right Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: storeDraw!, grandPriceIndex: 1),
+                      grandPriceImageURL: drawGrandPrices[1].imageURL),
                 ],
               ),
             ),
@@ -236,7 +139,7 @@ class WaitWidget extends StatelessWidget {
               children: [
                 // Middle Grand Price.
                 CompetitionScreenHelper(
-                    storeDraw: storeDraw!, grandPriceIndex: 2),
+                    grandPriceImageURL: drawGrandPrices[2].imageURL),
               ],
             ),
             Padding(
@@ -246,11 +149,11 @@ class WaitWidget extends StatelessWidget {
                 children: [
                   // Bottom Left Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: storeDraw!, grandPriceIndex: 3),
+                      grandPriceImageURL: drawGrandPrices[3].imageURL),
                   const Expanded(child: SizedBox.shrink()),
                   // Bottom Right Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: storeDraw!, grandPriceIndex: 4),
+                      grandPriceImageURL: drawGrandPrices[4].imageURL),
                 ],
               ),
             ),
@@ -270,13 +173,11 @@ class WaitWidget extends StatelessWidget {
                 children: [
                   // Top Left Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: storeDraw!, grandPriceIndex: 0),
+                      grandPriceImageURL: drawGrandPrices[0].imageURL),
                   buildAlarm(),
                   // Top Right Grand Price.
                   CompetitionScreenHelper(
-                      alignmentGeometry: Alignment.centerRight,
-                      storeDraw: storeDraw!,
-                      grandPriceIndex: 1),
+                      grandPriceImageURL: drawGrandPrices[1].imageURL),
                 ],
               ),
             ),
@@ -285,11 +186,11 @@ class WaitWidget extends StatelessWidget {
               children: [
                 // Middle Left Grand Price.
                 CompetitionScreenHelper(
-                    storeDraw: storeDraw!, grandPriceIndex: 2),
+                    grandPriceImageURL: drawGrandPrices[2].imageURL),
                 const Expanded(child: SizedBox.shrink()),
                 // Middle Right Grand Price.
                 CompetitionScreenHelper(
-                    storeDraw: storeDraw!, grandPriceIndex: 3),
+                    grandPriceImageURL: drawGrandPrices[3].imageURL),
               ],
             ),
             Padding(
@@ -301,11 +202,11 @@ class WaitWidget extends StatelessWidget {
                 children: [
                   // Bottom Left Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: storeDraw!, grandPriceIndex: 4),
+                      grandPriceImageURL: drawGrandPrices[4].imageURL),
                   const Expanded(child: SizedBox.shrink()),
                   // Bottom Right Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: storeDraw!, grandPriceIndex: 5),
+                      grandPriceImageURL: drawGrandPrices[5].imageURL),
                 ],
               ),
             ),
@@ -325,11 +226,11 @@ class WaitWidget extends StatelessWidget {
                 children: [
                   // Top Left Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: storeDraw!, grandPriceIndex: 0),
+                      grandPriceImageURL: drawGrandPrices[0].imageURL),
                   buildAlarm(),
                   // Top Right Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: storeDraw!, grandPriceIndex: 1),
+                      grandPriceImageURL: drawGrandPrices[1].imageURL),
                 ],
               ),
             ),
@@ -338,13 +239,13 @@ class WaitWidget extends StatelessWidget {
               children: [
                 // Middle Left Grand Price.
                 CompetitionScreenHelper(
-                    storeDraw: storeDraw!, grandPriceIndex: 2),
+                    grandPriceImageURL: drawGrandPrices[2].imageURL),
                 // Middle Right Grand Price.
                 CompetitionScreenHelper(
-                    storeDraw: storeDraw!, grandPriceIndex: 3),
+                    grandPriceImageURL: drawGrandPrices[3].imageURL),
                 // Middle Grand Price.
                 CompetitionScreenHelper(
-                    storeDraw: storeDraw!, grandPriceIndex: 4),
+                    grandPriceImageURL: drawGrandPrices[4].imageURL),
               ],
             ),
             Padding(
@@ -356,11 +257,11 @@ class WaitWidget extends StatelessWidget {
                 children: [
                   // Bottom Left Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: storeDraw!, grandPriceIndex: 5),
+                      grandPriceImageURL: drawGrandPrices[5].imageURL),
                   const Expanded(child: SizedBox.shrink()),
                   // Bottom Right Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: storeDraw!, grandPriceIndex: 6),
+                      grandPriceImageURL: drawGrandPrices[6].imageURL),
                 ],
               ),
             ),
@@ -380,13 +281,13 @@ class WaitWidget extends StatelessWidget {
                 children: [
                   // Top Left Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: storeDraw!, grandPriceIndex: 0),
+                      grandPriceImageURL: drawGrandPrices[0].imageURL),
                   // Top Middle Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: storeDraw!, grandPriceIndex: 1),
+                      grandPriceImageURL: drawGrandPrices[1].imageURL),
                   // Top Right Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: storeDraw!, grandPriceIndex: 2),
+                      grandPriceImageURL: drawGrandPrices[2].imageURL),
                 ],
               ),
             ),
@@ -395,11 +296,11 @@ class WaitWidget extends StatelessWidget {
               children: [
                 // Middle Right Grand Price.
                 CompetitionScreenHelper(
-                    storeDraw: storeDraw!, grandPriceIndex: 3),
+                    grandPriceImageURL: drawGrandPrices[3].imageURL),
                 buildAlarm(),
                 // Middle Left Grand Price.
                 CompetitionScreenHelper(
-                    storeDraw: storeDraw!, grandPriceIndex: 4),
+                    grandPriceImageURL: drawGrandPrices[4].imageURL),
               ],
             ),
             Padding(
@@ -411,13 +312,13 @@ class WaitWidget extends StatelessWidget {
                 children: [
                   // Bottom Left Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: storeDraw!, grandPriceIndex: 5),
+                      grandPriceImageURL: drawGrandPrices[5].imageURL),
                   // Middle Bottom Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: storeDraw!, grandPriceIndex: 6),
+                      grandPriceImageURL: drawGrandPrices[6].imageURL),
                   // Bottom Right Grand Price.
                   CompetitionScreenHelper(
-                      storeDraw: storeDraw!, grandPriceIndex: 7),
+                      grandPriceImageURL: drawGrandPrices[7].imageURL),
                 ],
               ),
             ),

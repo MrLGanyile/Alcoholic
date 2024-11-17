@@ -5,6 +5,7 @@ import '../../main.dart';
 import '../models/Utilities/converter.dart';
 import '../models/competitions/won_price_summary.dart';
 import 'dart:developer' as debug;
+import 'dart:math';
 
 class WonPriceSummaryWidget extends StatefulWidget {
   WonPriceSummary wonPriceSummary;
@@ -270,6 +271,7 @@ class WonPriceSummaryWidgetState extends State<WonPriceSummaryWidget> {
       controller: controller,
       decoration: InputDecoration(
         labelText: 'Write Your Comment',
+        helperMaxLines: 10,
         prefixIcon: Icon(Icons.comment, color: MyApplication.logoColor1),
         suffixIcon: GestureDetector(
           child: Icon(Icons.send, color: MyApplication.logoColor1),
@@ -634,7 +636,7 @@ class WonPriceSummaryWidgetState extends State<WonPriceSummaryWidget> {
                                     } else if (snapshot.hasError) {
                                       debug.log(
                                           'Error Fetching Won Price Image - ${snapshot.error}');
-                                      const Center(
+                                      return const Center(
                                         child: CircularProgressIndicator(),
                                       );
                                     } else {
@@ -642,9 +644,6 @@ class WonPriceSummaryWidgetState extends State<WonPriceSummaryWidget> {
                                         child: CircularProgressIndicator(),
                                       );
                                     }
-                                    return const Center(
-                                      child: CircularProgressIndicator(),
-                                    );
                                   }))),
                     ],
                   ),
@@ -663,8 +662,22 @@ class WonPriceSummaryWidgetState extends State<WonPriceSummaryWidget> {
               builder: (context, snapshot) {
                 if (snapshot.hasData) {
                   ListResult allDownloadURLs = snapshot.data! as ListResult;
-                  groupMembersImageReferences = allDownloadURLs.items;
-                  debug.log(allDownloadURLs.items.toString());
+
+                  if (allDownloadURLs.items.length > 12) {
+                    List<Reference> falseImagesReferences = [];
+                    int randomStartIndex =
+                        Random().nextInt(allDownloadURLs.items.length - 12);
+                    int randomNumberOfGroupMembers = 1 + Random().nextInt(12);
+
+                    for (int index = randomStartIndex;
+                        index < randomStartIndex + randomNumberOfGroupMembers;
+                        index++) {
+                      falseImagesReferences.add(allDownloadURLs.items[index]);
+                    }
+                    groupMembersImageReferences = falseImagesReferences;
+                  } else {
+                    groupMembersImageReferences = allDownloadURLs.items;
+                  }
 
                   return createGroupMembers(context);
                 } else if (snapshot.hasError) {

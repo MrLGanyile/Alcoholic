@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:alcoholic/models/Utilities/read_only.dart';
 import 'package:alcoholic/models/social/won_price_summary_comment.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
@@ -147,17 +148,34 @@ class CompetitionController extends GetxController {
 
     return null;
   }
+
+  String? findGrandPricesGridId(String competitionFK) {
+    FirebaseFirestore.instance
+        .collection('competitions')
+        .doc(competitionFK)
+        .collection('grand_prices_grids')
+        .snapshots()
+        .map((grandPricesGridSnapshot) {
+      if (grandPricesGridSnapshot.size == 1) {
+        grandPricesGridSnapshot.docs.map((grandPricesGridDoc) {
+          return grandPricesGridDoc.data()["grandPriceGridId"];
+        });
+      }
+    });
+
+    return null;
+  }
   /*=======================Grand Price Grid [End]===================== */
 
   /*===================Grand Price Grid Token [Start]================= */
 
   Stream<List<GrandPriceToken>> readCompetitionGrandPricesTokens(
-          String competitionFK, String grandPricesGridId) =>
+          String competitionFK) =>
       FirebaseFirestore.instance
           .collection('competitions')
           .doc(competitionFK)
           .collection('grand_prices_grids')
-          .doc(grandPricesGridId)
+          .doc(findGrandPricesGridId(competitionFK))
           .collection('grand_prices_tokens')
           .snapshots()
           .map((snapshot) => snapshot.docs
@@ -169,18 +187,36 @@ class CompetitionController extends GetxController {
   /*===================Competitors Grid [Start]================= */
 
   Future<GroupCompetitorsGrid?> findCompetitorsGrid(
-      String competitionFK, String competitorGridId) async {
-    DocumentReference reference = FirebaseFirestore.instance
+      String competitionFK) async {
+    FirebaseFirestore.instance
         .collection('competitions')
         .doc(competitionFK)
         .collection('competitors_grids')
-        .doc(competitorGridId);
+        .snapshots()
+        .map((competitorsGridSnapshot) {
+      if (competitorsGridSnapshot.size == 1) {
+        competitorsGridSnapshot.docs.map((competitorsGridDoc) {
+          return GroupCompetitorsGrid.fromJson(competitorsGridDoc.data());
+        });
+      }
+    });
 
-    DocumentSnapshot snapshot = await reference.get();
+    return null;
+  }
 
-    if (snapshot.exists) {
-      return GroupCompetitorsGrid.fromJson(snapshot.data()!);
-    }
+  String? findCompetitorsGridId(String competitionFK) {
+    FirebaseFirestore.instance
+        .collection('competitions')
+        .doc(competitionFK)
+        .collection('competitors_grids')
+        .snapshots()
+        .map((competitorsGridSnapshot) {
+      if (competitorsGridSnapshot.size == 1) {
+        competitorsGridSnapshot.docs.map((competitorsGridDoc) {
+          return competitorsGridDoc.data()["competitorsGridId"];
+        });
+      }
+    });
 
     return null;
   }
@@ -189,16 +225,24 @@ class CompetitionController extends GetxController {
   /*===================Competitors Grid Token[Start]================= */
 
   Stream<List<GroupCompetitorToken>> readCompetitionCompetitorsTokens(
-          String competitionFK, String competitorsGridId) =>
-      FirebaseFirestore.instance
-          .collection('competitions')
-          .doc(competitionFK)
-          .collection('grand_prices_grids')
-          .doc(competitorsGridId)
-          .collection('grand_prices_tokens')
-          .snapshots()
-          .map((snapshot) => snapshot.docs
-              .map((doc) => GroupCompetitorToken.fromJson(doc.data()))
-              .toList());
+      String competitionFK) {
+    return FirebaseFirestore.instance
+        .collection('competitions')
+        .doc(competitionFK)
+        .collection('grand_prices_grids')
+        .doc(findCompetitorsGridId(competitionFK))
+        .collection('grand_prices_tokens')
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => GroupCompetitorToken.fromJson(doc.data()))
+            .toList());
+  }
   /*===================Competitors Grid Token[End]================= */
+
+  Stream<DocumentSnapshot<Object?>> retrieveReadOnly(String readOnlyId) {
+    DocumentReference reference =
+        FirebaseFirestore.instance.collection('read_only').doc(readOnlyId);
+
+    return reference.snapshots();
+  }
 }
