@@ -1,0 +1,61 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "competitions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "dateTime.day",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "dateTime.month",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "dateTime.year",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "dateTime.hour",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "dateTime.minute",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "store_draws",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "drawDateAndTime.day",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "drawDateAndTime.hour",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "drawDateAndTime.month",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "drawDateAndTime.year",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "storeName",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "drawDateAndTime.minute",
+          "order": "ASCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

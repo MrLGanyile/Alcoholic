@@ -1,0 +1,486 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      // get - used if a client with want to read this document.
+      // list - used if there is going to be a query returning this document.
+      // To make this rule cascade I'll have to use restOfPath=** wildcard otherwise it won't.
+      allow read, write: if false;
+    }
+
+    function isLoggedInStoreOwner(){
+      return request.auth != null &&
+      exists(/databases/$(database)/documents/store_owners/
+      $(request.auth.uid));
+    }
+
+    function hasLoggedInAndOwnsThisStore(storeOwnerPhoneNumber){
+      return request.auth != null &&
+      request.auth.uid == get(/databases/
+      $(database)/documents/stores/$(storeOwnerPhoneNumber))
+      .data.storeOwnerPhoneNumber;
+              
+    }
+
+    function isLoggedInStoreMember(storeOwnerPhoneNumber){
+      return request.auth != null && 
+      exists(/databases/$(database)/documents/stores/
+      $(storeOwnerPhoneNumber)/customers/$(request.auth.uid));
+    }
+
+    // Usecase Name - Create Alcoholic Account
+    // Note: Has Model Named {Alcoholic}
+    // Done With Unit Testing.
+    match /alcoholics/{alcoholicPhoneNumber}{
+      allow create: if request.auth!=null &&
+
+      // Phone number is provided and matches the document id provided.
+      request.resource.data.phoneNumber != null &&
+      request.resource.data.phoneNumber != '' &&
+      request.resource.data.phoneNumber == alcoholicPhoneNumber &&
+
+      // New user isn't already an alcoholic nor is he a store owner.
+      exists(/databases/$(database)/documents/alcoholics/
+      $(request.auth.uid))==false &&
+      isLoggedInStoreOwner()==false &&
+
+      
+
+      request.resource.data.profileImageURL != null &&
+      request.resource.data.profileImageURL != '' &&
+
+      request.resource.data.sectionName != null &&
+      request.resource.data.sectionName in 
+      [
+        'Dunbar-Mayville-Durban-Kwa Zulu Natal-South Africa',
+        'Cato Crest-Mayville-Durban-Kwa Zulu Natal-South Africa'
+      ];
+
+      allow read;
+
+      // "update" is made this way because it conflicts with "create".
+      allow update, delete: if false;
+    }
+
+    // Note: Has Model Named {Relationship}
+    // Done With Unit Testing.
+    // Defines the join store and leave store user actions.
+    match /relationships/{userId}{
+
+      // create - Anybody who has logged in and has not joined any store can create a relationship.
+      // Only accessible by a cloud functions after the creation of a new alcoholic.
+      allow create: if false;
+
+      // Only the creator of a relationship can update it.
+      allow read: if request.auth != null && 
+      request.auth.uid == resource.data.userFK;
+
+      allow update: if request.auth != null && 
+      request.auth.uid == resource.data.userFK &&
+
+      request.resource.data.user3DigitToken==resource.data.user3DigitToken;
+
+      // Nobody can delete a relationship
+      allow delete: if false;
+    }
+
+    // Note: Has Model Named {StoreOwner}
+    // Done With Unit Testing.
+    match /store_owners/{storeOwnerPhoneNumber}{
+
+      // Only allow store owner admins to create a store.
+      allow create: if isLoggedInStoreOwner() &&
+
+      // Make sure the authenticated user is an admin.
+      get(/databases/$(database)/documents/store_owners/
+      $(request.auth.uid)).data.isAdmin &&
+
+      // Make sure the store owner's phone number is the same as the doc id.
+      request.resource.data.phoneNumber == storeOwnerPhoneNumber &&
+
+      // Make sure the new store owner to be added isn't an alcoholic.
+      exists(/databases/$(database)/documents/alcoholics/
+      $(storeOwnerPhoneNumber))==false &&
+
+      // Make sure the new store owner to be added isn't added already.
+      exists(/databases/$(database)/documents/store_owners/
+      $(storeOwnerPhoneNumber))==false &&
+    
+      // Make sure the full name is valid.
+      request.resource.data.fullname != null &&
+      request.resource.data.fullname != '' &&
+
+      // Make sure the surname is valid.
+      request.resource.data.surname != null &&
+      request.resource.data.surname != '' &&
+
+      // Make sure the surname is valid.
+      request.resource.data.identityDocumentImageURL != null &&
+      request.resource.data.identityDocumentImageURL != '' &&
+
+      // Make sure the store image location is valid.
+      request.resource.data.profileImageURL != null &&
+      request.resource.data.profileImageURL != '' &&
+
+      // Make sure the store already exist before creating it store owner.
+      exists(/databases/$(database)/documents/stores/
+      $(storeOwnerPhoneNumber));
+
+      // An admin or Any user can only delete his/her store owner account.
+      allow delete: if request.auth != null &&
+      
+      (
+        resource.data.phoneNumber==request.auth.uid ||
+        (
+          isLoggedInStoreOwner() &&
+
+          // Make sure the authenticated user is an admin.
+          get(/databases/$(database)/documents/store_owners/
+          $(request.auth.uid)).data.isAdmin
+        )
+      ); 
+
+      allow list: if isLoggedInStoreOwner();
+
+      allow get; // Anybody can view a store owner. 
+
+      // "update" is made this way because it conflicts with "create".
+      allow update: if false; 
+    }
+
+    // Note: Has Model Named {Store}
+    // Done With Unit Testing.
+    match /stores/{storeOwnerPhoneNumber}{
+
+      // Only allow store owner admins to create a store.
+      allow create: if isLoggedInStoreOwner() &&
+
+      // Make sure the authenticated user is an admin.
+      get(/databases/$(database)/documents/store_owners/
+      $(request.auth.uid)).data.isAdmin &&
+
+      // Make sure the store owner does not add himself twice.
+      request.auth.uid != storeOwnerPhoneNumber &&
+
+      // Make sure the store owner's phone number is the same as the doc id.
+      request.resource.data.storeOwnerPhoneNumber == storeOwnerPhoneNumber &&
+
+      // Make sure the new store owner to be added isn't an alcoholic.
+      exists(/databases/$(database)/documents/alcoholics/
+      $(storeOwnerPhoneNumber))==false &&
+
+      // Make sure the new store owner to be added isn't added already.
+      exists(/databases/$(database)/documents/store_owners/
+      $(storeOwnerPhoneNumber))==false &&
+    
+      // Make sure the store name is valid.
+      request.resource.data.storeName != null &&
+      request.resource.data.storeName != '' &&
+
+      // Make sure the store image location is valid.
+      request.resource.data.imageURL != null &&
+      request.resource.data.imageURL != '' &&
+
+      // Make sure the store section name is valid.
+      request.resource.data.sectionName != null &&
+      request.resource.data.sectionName in  
+      [
+        'Cato Crest-Mayville-Durban-Kwa Zulu Natal-South Africa',
+        'Dunbar-Mayville-Durban-Kwa Zulu Natal-South Africa',
+      ];
+
+      // Any logged in store owner can read store's info his/her store info.
+      allow read: if true;
+
+      // Only logged in store owners can update their store.
+      allow update: if request.auth != null &&
+      resource.data.storeOwnerPhoneNumber==request.auth.uid;
+
+      allow delete: if request.auth != null &&
+
+      (
+         resource.data.storeOwnerPhoneNumber==request.auth.uid ||
+        (
+          isLoggedInStoreOwner() &&
+
+          // Make sure the authenticated user is an admin.
+          get(/databases/$(database)/documents/store_owners/
+          $(request.auth.uid)).data.isAdmin
+        )
+      )
+
+      
+
+      // Note: Has Model Named {Customer}
+      // Done With Unit Testing.
+      match /customers/{custumerId}{
+
+        // Only a cloud function performs this task immedietely after a user leaves/joins a store.
+        allow write: if false; 
+
+        // Only store owners are allowed to view their customers.
+        allow read: if hasLoggedInAndOwnsThisStore(storeOwnerPhoneNumber);
+      }
+
+      // Note: Has Model Named {StoreDraw}
+      // Done With Unit Testing.
+      match /store_draws/{storeDrawId}{
+
+        // Only a store owner can create a store draw.
+        allow create: if hasLoggedInAndOwnsThisStore(storeOwnerPhoneNumber) &&
+        
+        // Make Sure It Sunday. 
+        // [removed for front end testing purpose, backend unit tests already passed.] request.resource.data.drawDateAndTime.weekday==7 && 
+        
+        // Make Sure It 8am, 9am or 10am.
+        //[removed for front end testing purpose, backend unit tests already passed.] 
+        (request.resource.data.drawDateAndTime.hour==8 || request.resource.data.drawDateAndTime.hour==9 || request.resource.data.drawDateAndTime.hour==10) &&
+        
+        // Make Sure The Minute And Seconds Are Zeros(O'clock).
+        // [removed for front end testing purpose, backend unit tests already passed.] 
+        request.resource.data.drawDateAndTime.minute==0 &&
+        // [removed for front end testing purpose, backend unit tests already passed.] 
+        request.resource.data.drawDateAndTime.second==0; 
+
+        // Anybody can view store draws.
+        allow read;
+
+        // Only accept store draw update or delete from the store owner while the straw is still open.
+        allow update, delete: if 
+        hasLoggedInAndOwnsThisStore(storeOwnerPhoneNumber) &&
+        resource.data.storeFK==storeOwnerPhoneNumber &&
+        resource.data.isOpen;
+
+        // Note: Has Model Named {DrawGroupCompetitor}
+        match /draw_groups_competitors/{drawGroupCompetitorId}{
+
+          // Only a store members can draw group competitors.
+          allow create: if isLoggedInStoreMember(storeOwnerPhoneNumber) &&
+
+          request.resource.data.groupCompetitorId != null &&
+          request.resource.data.groupCompetitorId == drawGroupCompetitorId &&
+
+          request.resource.data.storeDrawFK != null &&
+          request.resource.data.storeDrawFK == storeDrawId &&
+
+          request.resource.data.groupImageURL!= null &&
+          request.resource.data.groupImageURL != '' &&
+          
+          request.resource.data.creatorUsername != null &&
+          request.resource.data.creatorUsername != '' &&
+          
+          request.resource.data.creatorId != null &&
+          request.resource.data.creatorId != '' &&
+          request.resource.data.creatorId == request.auth.uid &&
+
+          request.resource.data.groupName != null &&
+          request.resource.data.groupName.size() >= 3 &&
+
+          request.resource.data.groupNumber != null &&
+          request.resource.data.groupNumber >= 1 &&
+
+          request.resource.data.groupSectionName in  
+          [
+            'Cato Crest-Mayville-Durban-Kwa Zulu Natal-South Africa',
+            'Dunbar-Mayville-Durban-Kwa Zulu Natal-South Africa',
+          ] &&
+
+          request.resource.data.groupSpecificLocation != null &&
+          request.resource.data.groupSpecificLocation != '' &&
+          
+          request.resource.data.groupMembers != null &&
+          request.resource.data.groupMembers.size() == 0;
+
+          // Anybody can view store draws.
+          allow read;
+
+          // Never let anyone update a draw competitor.
+          allow update:if isLoggedInStoreMember(storeOwnerPhoneNumber) &&
+          request.resource.data.groupCompetitorId ==
+          resource.data.groupCompetitorId &&
+
+          request.resource.data.storeDrawFK ==
+          resource.data.storeDrawFK &&
+
+          request.resource.data.groupImageURL ==
+          resource.data.groupImageURL &&
+          
+          request.resource.data.creatorUsername == 
+          resource.data.creatorUsername &&
+          
+          request.resource.data.creatorId ==
+          resource.data.creatorId &&
+
+          request.resource.data.groupName ==
+          resource.data.groupName &&
+
+          request.resource.data.groupNumber ==
+          resource.data.groupNumber &&
+
+          request.resource.data.groupSectionName ==
+          resource.data.groupSectionName &&
+
+          request.resource.data.groupSpecificLocation ==
+          resource.data.groupSpecificLocation  &&
+          
+          request.auth.uid in request.resource.data.groupMembers;
+
+          // Only accept deletion of a competitor from the store owner while the draw is still open.
+          allow delete: if 
+          hasLoggedInAndOwnsThisStore(storeOwnerPhoneNumber) &&
+          resource.data.storeDrawFK==storeDrawId &&
+          get(/databases/$(database)/documents/stores/
+          $(storeOwnerPhoneNumber)/store_draws/storeDrawId).data.isOpen;
+        }
+
+        // Note: Has Model Named {DrawGrandPrice}
+        // Done With Unit Testing.
+        match /draw_grand_prices/{drawGrandPrices}{
+          
+          // Only a store owner can create a store draw grand price.
+          allow create: if hasLoggedInAndOwnsThisStore(storeOwnerPhoneNumber) &&
+          
+          request.resource.data.grandPriceId != null &&
+          request.resource.data.grandPriceId == drawGrandPrices &&
+
+          request.resource.data.storeDrawFK != null &&
+          request.resource.data.storeDrawFK == storeDrawId &&
+
+          request.resource.data.imageURL != null &&
+          request.resource.data.imageURL != "" &&
+
+          request.resource.data.description != null &&
+          request.resource.data.description != "" &&
+
+          request.resource.data.grandPriceIndex != null &&
+          request.resource.data.grandPriceIndex>=0;
+
+          // Anybody can view store draws.
+          allow read;
+
+          // Only accept deletion of a competitor from the store owner while the draw is still open.
+          allow update, delete: if 
+          hasLoggedInAndOwnsThisStore(storeOwnerPhoneNumber) &&
+          resource.data.storeDrawFK==storeDrawId &&
+          get(/databases/$(database)/documents/stores/
+          $(storeOwnerPhoneNumber)/store_draws/$(storeDrawId)).data.isOpen;
+        }
+          
+      }
+
+      // Note: Has Model Named {GrandPriceStatus}
+      match /grand_prices_status/{grandPriceStatusId}{
+
+        // Only a cloud function performs this task immedietely after the competitions ends.
+        allow write: if false; 
+
+        // Only store owners are allowed to view their grand prices status.
+        allow read: if hasLoggedInAndOwnsThisStore(storeOwnerPhoneNumber);
+      }
+
+      // Note: Has Model Named {PastShowOff, Comment}
+      match /past_show_offs/{restOfPath=**}{
+        // /past_show_offs/pastShowOffId
+        // /past_show_offs/pastShowOffId/comments/commentId
+
+        // Only a cloud function is allowed to perform, reason 
+        // being data sanitization need to be performed prior 
+        // to saving a document of this collection.
+        allow create:if false; 
+
+        allow update, delete: if request.auth != null && 
+        request.auth.uid == resource.data.creatorId;
+
+        allow read;
+      }
+
+      // Note: Has Model Named {FutureShowOff, Comment}
+      match /future_show_offs/{restOfPath=**}{
+
+        // /future_show_offs/futureShowOffId
+        // /future_show_offs/futureShowOffId/comments/commentId
+
+        // Only a cloud function is allowed to perform, reason 
+        // being data sanitization need to be performed prior 
+        // to saving a document of this collection.
+        allow create:if false; 
+
+        allow update, delete: if request.auth != null && 
+        request.auth.uid == resource.data.creatorId;
+
+        allow read;
+      }
+    }
+
+    // Note: Has Model Named {StoreNameInfo}
+    // Done With Unit Testing.
+    match /stores_names_info/{storeNameInfoId}{
+      allow read: if true;
+      allow create, update, delete: if false; // Called By A Cloud Function Only.
+    }
+
+    // Note: Has Model Named {RecentWin}
+    match /recent_wins/{recentWinId}{
+      // Everybody can see recent wins.
+      // read - Invoked Every Time A User Views The Recent Won Prices Screen (Screen 1).
+      allow read; 
+      // create - Invoked Whenever Somebody Wins A Competition.
+      allow write: if false;
+    }
+
+    // Note: Has Model Named {WonPriceSummary}
+    // Done With Unit Testing.
+    match /won_prices_summaries/{wonPriceSummaryId}{
+      
+      // Everybody can see a won price.
+      allow read; 
+      // create - Invoked Whenever Somebody Wins A Competition.
+      allow write: if false;
+    }
+
+    // Note: Has Model Named {Competition}
+    match /competitions/{competitionId}{
+      
+      // get - Invoked whenever one needs to view the competition.
+      allow get: if true; 
+      allow list: if false;
+      
+      // create - Automatically invoked when a competition is created(Screen 10.2.1).
+      allow create: if request.auth.uid != null &&
+      get(/databases/$(database)/documents/users/
+      $(request.auth.uid)).data.isOwner == true;
+      
+      // Note: Has Model Named {GrandPricesGrid}
+      match /grand_prices_grids/{grandPriceGridId=**}{
+
+        allow write: if false;
+        allow get: if true; 
+        allow list: if false;
+
+        // Note: Has Model Named {GrandPriceToken}
+        match /grand_price_tokens/{grandPriceTokenId}{
+          allow write: if false;
+          allow get: if false;
+          allow list: if true;
+        }
+      
+      }
+
+      // Note: Has Model Named {GroupCompetitorsGrid}
+      match /group_competitors_grids/{competitorGridId}{
+        
+        allow write: if false;
+        allow get: if true; 
+        allow list: if false;
+
+        // Note: Has Model Named {GroupCompetitorToken}
+        match /group_competitors_tokens/{competitorTokenId}{
+          allow write: if false;
+          allow get: if false;
+          allow list: if true;
+        }
+      }
+    }
+  }
+}
